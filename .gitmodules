@@ -1,0 +1,4 @@
+[submodule "latex_common"]
+	path = latex_common
+	url = git@github.com:tpreynolds/latex_common.git
+	branch = master
