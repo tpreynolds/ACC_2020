@@ -6,6 +6,7 @@
 
 \input{latex_common/preamble.tex}
 \input{latex_common/my_tikz.tex}
+\input{special.tex}
 
 \IEEEoverridecommandlockouts                              % This command is only needed if                                                         % you want to use the \thanks command
 
@@ -69,8 +70,6 @@ The point of this paper is to communicate the ``creeping phenonmenon'' that occu
 \item why is this important, and how is it useful?
 \end{itemize}
 
-test~\cite{Reynolds2019}.
-
 \section{SEQUENTIAL CONVEX PROGRAMMING}
 
 \begin{itemize}
@@ -78,6 +77,63 @@ test~\cite{Reynolds2019}.
 \item provide a generalized algorithmic framework for the class of algorithms susceptible to the creeping phenomenon.
 \end{itemize}
 % only go so far as to define the linear and nonlinear costs as "original cost" plus "feasibility measure". 
+
+Consider the following optimization problem
+\begin{subequations}\label{eq:nlp}
+\begin{align}
+\min_z &\quad \ocost(\z) \label{eq:nlp_a} \\
+\text{subject to:} &\quad g_i(\z) \leq 0, \quad i \in \setIcvx \label{eq:nlp_b}\\
+&\quad h_i (\z) \leq 0, \quad i \in \setIncvx \label{eq:nlp_c}
+\end{align}
+\end{subequations}
+where $\z\in\real^{\nz}$, $\setIcvx = \{1,\ldots,n_i\}$, $\setIncvx=\{n_i+1,\ldots,n_i+n_e\}$ represent the indices of the convex and non-convex inequality constraints respecitvely. We shall assume that the cost function $\ocost$ is convex, and that each $h_i$ is at least once differentiable almost everywhere. To simplify the notation, we assume that any equality constraints are represented by a pair of inequality constraints. Problem~\eqref{eq:nlp} is typically refered to as a nonlinear programming problem, but herein we shall refer to it as the original non-convex optimization problem (or simple the original problem). While there exist general purpose solvers that are able to solve the original problem (see, e.g.,~\cite{Gill1981,NocedalWright}), a current trend is to seek solutions by using iterative schemes that are based on convex optimization. 
+
+The barrier to directly applying convex optimization methods is of course the set of non-convex constraints~\eqref{eq:nlp_c}. Sequential convex programming methods approximate each constraint in~\eqref{eq:nlp_c} with a convex function of the solution variable. Each convex approximation is computed using a reference solution, $\zb$, and takes the form
+\begin{equation}
+\bar{h}_i(\z,\zb) \leq 0, \quad i\in\setIncvx.
+\label{eq:cvx_approximation_general}
+\end{equation}
+There are several choices for $\bar{h}_i$: first- or second-order Taylor series approximations, inner convex approximations, or any other convex function that locally approximates the non-convex $h_i$. These approximations are inherently local; they accuracy decreases as $\|\z-\zb\|$ increases. In addition, consider the possible scenario where $\ocost$ and each $g_i$ are linear functions, and we choose each $\bar{h}_i$ to be a first-order approximation (i.e. the linearization of $h_i$ around $\zb$). In this case, the resulting optimization problem is unbounded below, a phenomenon refered to as \textit{artificial unboundedness}. To address the local nature of the approximations~\eqref{eq:cvx_approximation_general} and to avoid artificial unboundedness, we add a \textit{trust region} constraint of the form
+\begin{equation}
+\| \z - \zb \|_q \leq \eta,
+\label{eq:trust_region}
+\end{equation}
+where $q=\{1,\,2,\,\infty\}$ and $\eta\in\realpp$ is a positive \textit{trust region radius}. Now we may formulate the following convex approximation to Problem~\eqref{eq:nlp}:
+\begin{subequations}\label{eq:cvx_tr}
+\begin{align}
+\min_z &\quad \ocost(\z) \label{eq:cvx_tr_a} \\
+\text{subject to:} &\quad g_i(\z) \leq 0, \quad i\in\setIcvx \label{eq:cvx_tr_b} \\
+&\quad \bar{h}_i(\z,\zb) \leq 0, \quad i\in\setIncvx \label{eq:cvx_tr_c}\\
+&\quad \| \z - \zb \|_q \leq \eta  \label{eq:cvx_tr_d}
+\end{align}
+\end{subequations}
+Problem~\eqref{eq:cvx_tr} is now a convex program. However, directly solving Problem~\eqref{eq:cvx_tr} has proved difficult in several previous studies \todo{add studies}. In particular, Problem~\eqref{eq:cvx_tr} is susceptible to \textit{artificial infeasibility} that stems from two probable causes. First, the approximation~\eqref{eq:cvx_tr_c} and trust region~\eqref{eq:cvx_tr_d} can be incompatible, in the sense that $\mathcal{F}_1 = \{\z\,|\,\eqref{eq:cvx_tr_c}\text{ and }\eqref{eq:cvx_tr_d}\text{ are satisfied}\} = \emptyset$. This occurs when the reference $\zb$ is further than a distance $\eta$ from the set $\{\z\,|\,h_i(\z)\leq,~i\in\setIcvx\}$ under the $q$-norm. Second, the constraints~\eqref{eq:cvx_tr_b} and~\eqref{eq:cvx_tr_c} can be incompatible, in the sense that $\mathcal{F}_2 = \{\z\,|\,\eqref{eq:cvx_tr_b}\text{ and }\eqref{eq:cvx_tr_c}\text{ are satisfied}\}=\emptyset$. Each of these cases are pictured in~\todo{add figure from CSM}. Artificial infeasibility can be avoided by adding so-called \textit{virtual control} to~\eqref{eq:cvx_tr_c}:
+\begin{equation}
+\bar{h}_i(\z,\zb) - \vc_i \leq 0
+\end{equation}
+where $\vc_i > 0$. The vector $\vc\in\real^{n_e}$ is added as a solution variable, and the resulting augmented convex program is
+\begin{subequations}\label{eq:cvx_apprx}
+\begin{align}
+\min_{\z,\vc} &\quad \ocost(\z) + \lambda P(\nu) \label{eq:cvx_apprx_a} \\
+\text{subject to:} &\quad g_i(\z) \leq 0, \quad i\in\setIcvx \label{eq:cvx_apprx_b} \\
+&\quad \bar{h}_i(\z,\zb) - \vc_i \leq 0, \quad i\in\setIncvx \label{eq:cvx_apprx_c}\\
+&\quad \|\z-\zb\|_q \leq \eta \label{eq:cvx_apprx_d}
+\end{align}
+\end{subequations}
+where $P : \real^{n_e} \rightarrow \realpp$ is a positive-definite penalty function and $\lambda>0$ is a user-selected weight. Typically $\lambda \gg 1$ to limit the use of virtual control only to cases when it is required to avoid artificial infeasibility.
+
+We shall refer to a solution to Problem~\eqref{eq:cvx_apprx} as an \textit{iterate}, and denote it by $(\z^*,\vc^*)$. Sequential convex programming algorithms iteratively solve Problem~\eqref{eq:cvx_apprx} and use resulting iterate to update $\zb$. The resulting sequence of solutions $\zb$ approaches a locally optimal solution of~\eqref{eq:nlp} under certain conditions and problem assumptions. There have been numerous papers that study the convergence properties of these algorithms, offering conditions/assumptions under which convergence is guaranteed~\todo{add citations}. This paper does not discuss \textit{whether} convergence is achieved or at what rate, but is instead focused on \textit{how} the iterates are related to each other.
+
+\subsection{Trust Region Updates}
+
+The convergence process is guided by the size of the trust region radius $\eta$. The radius is updated based on a metric that measures the accuracy of the approximations~\eqref{eq:cvx_approximation_general}. To this end, we define the following functions
+\begin{subequations}
+\begin{align}
+J(\z) = \ocost(\z) + \lambda P(h(\z)) \\
+L(\z) = \ocost(\z) + \lambda P(\vc)
+\end{align}
+\end{subequations}
+where $h(\z) \in \real^{n_e}$ is the concatenation of the non-convex constraints from the original problem~\eqref{eq:nlp_c}.
 
 \section{THE CREEPING PHENOMENON}
 
