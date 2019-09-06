@@ -95,53 +95,136 @@ The barrier to directly applying convex optimization methods is of course the se
 \end{equation}
 There are several choices for $\bar{h}_i$: first- or second-order Taylor series approximations, inner convex approximations, or any other convex function that locally approximates the non-convex $h_i$. These approximations are inherently local; they accuracy decreases as $\|\z-\zb\|$ increases. In addition, consider the possible scenario where $\ocost$ and each $g_i$ are linear functions, and we choose each $\bar{h}_i$ to be a first-order approximation (i.e. the linearization of $h_i$ around $\zb$). In this case, the resulting optimization problem is unbounded below, a phenomenon refered to as \textit{artificial unboundedness}. To address the local nature of the approximations~\eqref{eq:cvx_approximation_general} and to avoid artificial unboundedness, we add a \textit{trust region} constraint of the form
 \begin{equation}
-\| \z - \zb \|_q \leq \eta,
+\| \z - \zb \|_q \leq \tr,
 \label{eq:trust_region}
 \end{equation}
-where $q=\{1,\,2,\,\infty\}$ and $\eta\in\realpp$ is a positive \textit{trust region radius}. Now we may formulate the following convex approximation to Problem~\eqref{eq:nlp}:
+where $q=\{1,\,2,\,\infty\}$ and $\tr\in\realpp$ is a positive \textit{trust region radius}. Now we may formulate the following convex approximation to Problem~\eqref{eq:nlp}:
 \begin{subequations}\label{eq:cvx_tr}
 \begin{align}
 \min_z &\quad \ocost(\z) \label{eq:cvx_tr_a} \\
 \text{subject to:} &\quad g_i(\z) \leq 0, \quad i\in\setIcvx \label{eq:cvx_tr_b} \\
 &\quad \bar{h}_i(\z,\zb) \leq 0, \quad i\in\setIncvx \label{eq:cvx_tr_c}\\
-&\quad \| \z - \zb \|_q \leq \eta  \label{eq:cvx_tr_d}
+&\quad \| \z - \zb \|_q \leq \tr  \label{eq:cvx_tr_d}
 \end{align}
 \end{subequations}
-Problem~\eqref{eq:cvx_tr} is now a convex program. However, directly solving Problem~\eqref{eq:cvx_tr} has proved difficult in several previous studies \todo{add studies}. In particular, Problem~\eqref{eq:cvx_tr} is susceptible to \textit{artificial infeasibility} that stems from two probable causes. First, the approximation~\eqref{eq:cvx_tr_c} and trust region~\eqref{eq:cvx_tr_d} can be incompatible, in the sense that $\mathcal{F}_1 = \{\z\,|\,\eqref{eq:cvx_tr_c}\text{ and }\eqref{eq:cvx_tr_d}\text{ are satisfied}\} = \emptyset$. This occurs when the reference $\zb$ is further than a distance $\eta$ from the set $\{\z\,|\,h_i(\z)\leq,~i\in\setIcvx\}$ under the $q$-norm. Second, the constraints~\eqref{eq:cvx_tr_b} and~\eqref{eq:cvx_tr_c} can be incompatible, in the sense that $\mathcal{F}_2 = \{\z\,|\,\eqref{eq:cvx_tr_b}\text{ and }\eqref{eq:cvx_tr_c}\text{ are satisfied}\}=\emptyset$. Each of these cases are pictured in~\todo{add figure from CSM}. Artificial infeasibility can be avoided by adding so-called \textit{virtual control} to~\eqref{eq:cvx_tr_c}:
+Problem~\eqref{eq:cvx_tr} is now a convex program. However, directly solving Problem~\eqref{eq:cvx_tr} has proved difficult in several previous studies \todo{add studies}. In particular, Problem~\eqref{eq:cvx_tr} is susceptible to \textit{artificial infeasibility} that stems from two probable causes. First, the approximation~\eqref{eq:cvx_tr_c} and trust region~\eqref{eq:cvx_tr_d} can be incompatible, in the sense that $\mathcal{F}_1 = \{\z\,|\,\eqref{eq:cvx_tr_c}\text{ and }\eqref{eq:cvx_tr_d}\text{ are satisfied}\} = \emptyset$. This occurs when the reference $\zb$ is further than a distance $\tr$ from the set $\{\z\,|\,g_i(\z)\leq,~i\in\setIcvx\}$ under the $q$-norm. Second, the constraints~\eqref{eq:cvx_tr_b} and~\eqref{eq:cvx_tr_c} can be incompatible, in the sense that $\mathcal{F}_2 = \{\z\,|\,\eqref{eq:cvx_tr_b}\text{ and }\eqref{eq:cvx_tr_c}\text{ are satisfied}\}=\emptyset$. Each of these cases is shown graphically in Figure~\ref{fig:artificial_infeas}. Artificial infeasibility can be avoided by adding so-called \textit{virtual control} to~\eqref{eq:cvx_tr_c}:
 \begin{equation}
 \bar{h}_i(\z,\zb) - \vc_i \leq 0
 \end{equation}
-where $\vc_i > 0$. The vector $\vc\in\real^{n_e}$ is added as a solution variable, and the resulting augmented convex program is
+where $\vc_i > 0$. The vector $\vc\in\real^{n_e}$ is added as a solution variable, and the resulting augmented convex program is%
+\begin{figure}
+\centering
+\subfloat[$\mathcal{F}_1 = \emptyset$.]{\input{figs/tikz_artificial_infeas_a.tex}} \hfil
+\subfloat[$\mathcal{F}_2 = \emptyset$]{\input{figs/tikz_artificial_infeas_b.tex}}
+\caption{A depiction of the two causes of artificial infeasibility.}
+\label{fig:artificial_infeas}
+\end{figure}
 \begin{subequations}\label{eq:cvx_apprx}
 \begin{align}
 \min_{\z,\vc} &\quad \ocost(\z) + \lambda P(\nu) \label{eq:cvx_apprx_a} \\
 \text{subject to:} &\quad g_i(\z) \leq 0, \quad i\in\setIcvx \label{eq:cvx_apprx_b} \\
 &\quad \bar{h}_i(\z,\zb) - \vc_i \leq 0, \quad i\in\setIncvx \label{eq:cvx_apprx_c}\\
-&\quad \|\z-\zb\|_q \leq \eta \label{eq:cvx_apprx_d}
+&\quad \|\z-\zb\|_q \leq \tr \label{eq:cvx_apprx_d}
 \end{align}
 \end{subequations}
 where $P : \real^{n_e} \rightarrow \realpp$ is a positive-definite penalty function and $\lambda>0$ is a user-selected weight. Typically $\lambda \gg 1$ to limit the use of virtual control only to cases when it is required to avoid artificial infeasibility.
 
-We shall refer to a solution to Problem~\eqref{eq:cvx_apprx} as an \textit{iterate}, and denote it by $(\z^*,\vc^*)$. Sequential convex programming algorithms iteratively solve Problem~\eqref{eq:cvx_apprx} and use resulting iterate to update $\zb$. The resulting sequence of solutions $\zb$ approaches a locally optimal solution of~\eqref{eq:nlp} under certain conditions and problem assumptions. There have been numerous papers that study the convergence properties of these algorithms, offering conditions/assumptions under which convergence is guaranteed~\todo{add citations}. This paper does not discuss \textit{whether} convergence is achieved or at what rate, but is instead focused on \textit{how} the iterates are related to each other.
+We shall refer to a solution to Problem~\eqref{eq:cvx_apprx} as an \textit{iterate}, and denote it by $(\z^*,\vc^*)$. Sequential convex programming algorithms iteratively solve Problem~\eqref{eq:cvx_apprx} and use resulting iterate to update $\zb$. Moreover, it is typical to use $(\z^*,\vc^*)$ to update the value of $\tr$, based on some assessment of the accuracy of the approximation in~\eqref{eq:cvx_approximation_general}. Methods for updating $\tr$ are discussed in~\sref{subsec:tr_updates}. The resulting sequence of solutions $\zb$ approaches a locally optimal solution of~\eqref{eq:nlp} under certain conditions and problem assumptions. There have been numerous papers that study the convergence properties of these algorithms, offering conditions/assumptions under which convergence is guaranteed to various flavors of minima~\todo{add citations}. This paper does not discuss \textit{whether} convergence is achieved or at what rate, but instead looks at an implicit property of SCP type algorithms that use the validity of the approximations to update the trust region size.
 
-\subsection{Trust Region Updates}
+\subsection{Trust Region Updates}\label{subsec:tr_updates}
 
-The convergence process is guided by the size of the trust region radius $\eta$. The radius is updated based on a metric that measures the accuracy of the approximations~\eqref{eq:cvx_approximation_general}. To this end, we define the following functions
-\begin{subequations}
+Most sequential convex programming methods use a dynamically sized trust region. The size of $\tr$ is updated with each iteration according to a set of rules that are specified by the designer. These rules are designed to facilitate formal convergence proofs, and makes use of a performance metric that is based on $(\z^*,\vc^*)$ to do so. The performance metric can be thought of as a function that provides key feedback to the iterative process and guides convergence. To introduce a few common performance metrics, we first define the following functions
+\begin{subequations}\label{eq:scp_costs}
 \begin{align}
-J(\z) = \ocost(\z) + \lambda P(h(\z)) \\
-L(\z) = \ocost(\z) + \lambda P(\vc)
+J(\z) &= \ocost(\z) + \lambda P\big( h(\z) \big) \label{eq:scp_costs_nl}\\
+L(\z) &= \ocost(\z) + \lambda P\big( \bar{h}(\z,\zb) \big) \label{eq:scp_costs_l}
 \end{align}
 \end{subequations}
-where $h(\z) \in \real^{n_e}$ is the concatenation of the non-convex constraints from the original problem~\eqref{eq:nlp_c}.
+where $h(\z) \in \real^{n_e}$ is the concatenation of the non-convex constraints from the original problem~\eqref{eq:nlp_c}, and similarly for $\bar{h}(\z,\zb)$. The cost functions in~\eqref{eq:scp_costs} can be thought of as measuring the optimality (via $\ocost$) and the feasibility (via $P(\cdot)$) of a candidate solution. The measure of feasibility is weighted by $\lambda$. The function~\eqref{eq:scp_costs_nl} measures this weighted cost with respect to the original non-convex problem~\eqref{eq:nlp}, while the function~\eqref{eq:scp_costs_l} measures the same weighted cost with respect to the approximated convex problem~\eqref{eq:cvx_apprx}. 
+
+We now introduce two commonly used performance metrics. The first is simply the \textit{relative error}
+\begin{equation}
+\pmet = \frac{J(\z^*) - L(\z^*)}{L(\z^*)},
+\label{eq:pmet_rel_error}
+\end{equation}
+which measures how close the original non-convex and approximated convex weighted costs are. The ideal value of the relative error is zero. Another performance metric is the \textit{relative decrement} defined as
+\begin{equation}
+\pmet = \frac{J(\zb) - J(\z^*)}{J(\zb) - L(\z^*)},
+\label{eq:pmet_rel_decrement}
+\end{equation}
+which measures how well the convex approximation predicts the decrease in the original non-convex weighted cost. The ideal value of the relative decrement is one. Once chosen\footnote{We stress that the choice of performance metric is not arbitrary, but is tied to the use of a specific algorithm. The two possibilities presented here are abstract representations of performance metrics used by algorithms in the literature.}, the scalar-valued performance metric $\pmet$ is used to grow, shrink, or maintain the size of the trust region radius. Crucially, it is also used to reject a solution $\z^*$ in certain cases, which means the same convex approximation is kept but the trust region is shrunk, and the convex problem is re-solved. 
+
+To decide which case we are in for a given iteration (accept/reject, shrink/keep/grow), the user defines three real numbers $\pmet_0,\,\pmet_1,\,\pmet_2\in(0,1)$ that split the real number line into up to four segments. The value of $\pmet$ places each iterate in one of these four segments, and the trust region and reference solution are updated according to the rules in Figure~\ref{fig:scp_updates}. The constants $\alpha,\beta >1$ are the shrink and growth rates, respectively, and are chosen by the designer. 
+
+\begin{figure*}
+\centering
+\input{figs/tikz_scvx_updates.tex}
+\caption{Update rules for two different performance metrics of a general sequential convex programming algorithm.}
+\label{fig:scp_updates}
+\end{figure*}
+
+We now make a brief technical comment before proceeding. First, the denominators in~\eqref{eq:pmet_rel_error} and~\eqref{eq:pmet_rel_decrement} must be verified to be non-zero before computing the value of $\pmet$. In the case of~\eqref{eq:pmet_rel_error}, a sufficient condition to avoid this is $\ocost(\z)>0$ for all feasible $\z$. In the case of~\eqref{eq:pmet_rel_decrement}, a zero denominator actually implies that the iterations can be terminated, since $L(\z^*) \leq L(\zb) = J(\zb)$ (note that this implies the denominator is always nonnegative). If $J(\zb)-L(\z^*)=0$, then the optimal solution found by solving~\eqref{eq:cvx_apprx} is exactly the reference solution, and the iterations may be stopped. Therefore for either performance metric, divide-by-zero conditions can be avoided.   
 
 \section{THE CREEPING PHENOMENON}
 
-% introduce two ways of computing the progress metric; dJ/dL and dL/L. Both are susceptible to creeping.
-\begin{itemize}
-\item introduce the creeping phenomenon, provide a graphical description
-\item include an example of what this can look like
-\end{itemize}
+Intuition would support the claim that a dynamically sized trust region would allow an SCP algorithm to take larger steps in regions where the convex approximation is the most accurate. In this section we demonstrate that actually the opposite can happen: dynamic trust regions can cause SCP algorithms to make \textit{slow} progress even when the convex approximation is quite accurate. This is not a universal phenonmenon in the sense that it applies equally to all problem scenarios. Rather, intrinsic properties of a the original non-convex constraints~\eqref{eq:nlp_c} can make one problem more susceptible to this phenomenon than others. We will explore this behavior for each of the performance metrics defined in~\sref{subsec:tr_updates} separately.
+
+\subsection{Relative Error}\label{subsec:creep_rel_err}
+
+We introduce the notion of internal resistance by studying algorithms that use the relative error~\eqref{eq:pmet_rel_error} as the metric with which to update the reference and trust region radius. From Figure~\ref{fig:scp_updates}, the algorithm will reject the current step if $\pmet>\pmet_2$, where $\pmet_2<1$ is a user-defined value. It is enough for the current discussion to assume that $\pmet_2=1$, so that subsequent results are sufficient for any chosen value of $\pmet_2$ during implementation. In order that an iterate be accepted, we must then have
+\begin{equation}
+\frac{J(\z^*) - L(\z^*)}{L(\z^*)} < 1 \quad \Rightarrow \quad  J(\z^*) < 2 L(\z^*).
+\label{eq:rel_err_accept}
+\end{equation} 
+Using~\eqref{eq:scp_costs} this can be rewritten as
+\begin{equation}
+P\big( h(\z^*) \big) < \frac{\phi(\z^*)}{\lambda} + 2 P\big( \bar{h}(\z^*,\zb) \big).
+\label{eq:rel_err_accept_2}
+\end{equation}
+What~\eqref{eq:rel_err_accept_2} says is that in order for a step to be accepted, the degree to which the iterate $\z^*$ is infeasible for the original non-convex problem must be bounded by the right hand side. If inequality~\eqref{eq:rel_err_accept_2} is violated, we find ourselves in the top-right case in Figure~\ref{fig:scp_updates}: the iterate $\z^*$ is rejected, the trust region is shrunk by an amount $\alpha$ and the problem is resolved. The inequality~\eqref{eq:rel_err_accept_2} can also be interpreted as saying that the infeasibility of all accepted iterates with respect to the original non-convex problem is bounded from above by the sum of the (weighted) original cost and twice the amount of infeasibility in the convex approximation. 
+
+Loosely speaking, the problem of internal resistance appears when there is sufficient curvature in the set of non-convex functions $h$ that is not captured by the approximation $\bar{h}(\z,\zb)$. In this case, satisfaction of the convex constraints $\bar{h}(\z^*,\zb) \leq 0$ implies that $P\big(h(\z^*)\big)$ can be large, and thus the inequality~\eqref{eq:rel_err_accept_2} is violated. This is most often the case when $\bar{h}_i(\cdot,\zb)$ is an affine function of its argument, but $h_i(\cdot)$ is not (e.g., algorithms that only use first-order approximations, and/or problems where the $h_i(\cdot)$ are used to represent equality constraints). 
+
+\subsection{Relative Decrement}\label{subsec:crepp_rel_dec}
+
+Algorithms that use the relative decrement as the metric with which to update the reference and trust region size experience the problem internal resistance in a slightly different way. Internal resistance will only arise when the reference is \textit{feasible} (or nearly so) for the original non-convex problem. In this case, we have $P\big(h(\z)\big)=0$. To see why, first recall that the denominator in~\eqref{eq:pmet_rel_decrement} is always nonnegative, and that an iterate may be rejected when $\pmet<\pmet_0$ for $\pmet_0>0$. Similar to the relative error case, we shall assume that $\pmet_0=0$ so that the following results are sufficient for any chosen value. If $\pmet_0=0$, then according to the rules in Figure~\ref{fig:scp_updates} an iterate will only accepted if the \textit{numerator} of~\eqref{eq:pmet_rel_decrement} is strictly positive. 
+
+Hence for an accepted step we have
+\begin{subequations}\label{eq:rel_dec_bound}
+\begin{align}
+0 &< J(\zb) - J(\z^*) \label{eq:rel_dec_bound_a}\\
+0 &< \ocost(\zb) - \ocost(\z^*) - \lambda P\big( h(\z^*) \big) \label{eq:rel_dec_bound_b}\\
+P\big( h(\z^*) \big) &< \frac{\ocost(\zb) - \ocost(\z^*)}{\lambda} \label{eq:rel_dec_bound_c}
+\end{align}
+\end{subequations}
+which says that the degree to which the iterate $\z^*$ is infeasible for the original non-convex problem is bounded by the (weighted) reduction in original cost. If inequality~\eqref{eq:rel_dec_bound_c} is violated, we find ourselves in the bottom-left case in Figure~\ref{fig:scp_updates}: the iterate will be rejected, the trust region shrunk, and the problem is resolved. 
+
+\begin{remark}
+The inequality~\eqref{eq:rel_dec_bound_b} also illuminates the fact that if the reference $\zb$ is feasible for the original non-convex problem, then an accepted iterate must (strictly) decrease the original cost. This is due to the fact that $\lambda>0$ and $P(\cdot)$ is positive definite.
+\end{remark}
+
+Since $\zb$ is feasible for the original problem, we know that actually $\zb$ is a feasible point for Problem~\eqref{eq:cvx_tr} as well (the convex approximation with no virtual control). Thus the optimal solution of Problem~\eqref{eq:cvx_apprx} will not use any virtual control provided that $\lambda$ is large enough\footnote{There is a non-empty feasible set that uses no virtual control, solutions outside this set necessarily increase the cost for large values of $\lambda$.}. The solution $\z^*$ will therefore satisfy $\bar{h}(\z^*,\zb)\leq 0$. If $\bar{h}(\cdot,\zb)$ does not adequately capture the curvature of $h(\cdot)$, then inequality~\eqref{eq:rel_dec_bound_c} is more likely to be violated. This implies that for a given set of non-convex functions $h(\cdot)$, for each feasible $\zb$ there is a \textit{maximum trust region size} that is implicitly defined by the method used to ``convexify'' the $h(\cdot)$ and the largest achievable reduction in cost (weighted by $1/\lambda$). For $\lambda\gg1$ the maximum trust region size such that~\eqref{eq:rel_dec_bound_c} is satisfied can be small, causing the algorithm to take small incremental steps that are each nearly feasible for the original non-convex problem. This is depicted in Figure~\todo{add fig}.
+
+\subsection{A Simple Example}\label{subsec:toy_example}
+
+This section provides a simple example that exhibits the crawling phenomenon. Consider the following optimization problem that uses $\z=(z_1,z_2)\in\real^2$ for plotting purposes
+\begin{subequations}\label{eq:toy_prob}
+\begin{align}
+\min_z &\quad z_2 \label{eq:toy_prob_a}\\
+\text{s.t.} &\quad g_1(\z) = -z_2 - \tfrac{4}{3} z_1 - \tfrac{2}{3} \leq 0 \label{eq:toy_prob_b}\\
+&\quad g_2(\z) = \z - 2 \leq 0 \label{eq:toy_prob_c}\\
+&\quad g_3(\z) = -\z - 2 \leq 0 \label{eq:toy_prob_d}\\
+&\quad h_1(\z) = z_2 - z_1^4 + 2z_1^3 - 1.2z_1^2 - 2z_1 = 0 \label{eq:toy_prob_e}
+\end{align}
+\end{subequations}
+This problem is non-convex due to the quartic constraint~\eqref{eq:toy_prob_e}.
+
+
+% % introduce two ways of computing the progress metric; dJ/dL and dL/L. Both are susceptible to creeping.
+% \begin{itemize}
+% \item introduce the creeping phenomenon, provide a graphical description
+% \item include an example of what this can look like
+% \end{itemize}
 
 
 \section{POSSIBLE REMEDIES: HYBRID ALGORITHMS}
