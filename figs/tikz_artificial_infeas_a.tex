@@ -24,9 +24,9 @@
 \filldraw[black] (\cx,\cy) circle (1.5pt) node[anchor=south east,yshift=-0.1cm] {$\zb$};
 % draw ncvx constraint
 \draw[thick,domain=-1:\hy,smooth,variable=\x,blue] plot ({\x},{\slp*\x*\x});
-\node[anchor=south,name=ncvx,blue] at (-1,0.5) {$h_1(\z)=0$};
+\node[anchor=south,name=ncvx,blue] at (-1,0.5) {$\fne_1(\z)=0$};
 % draw cvx linearization
 \draw[thick,domain=-0.25:\hy,smooth,variable=\x,dashed,red] plot ({\x},{2*\slp*\xintrsct*\x-\slp*\xintrsct*\xintrsct});
-\node[anchor=north,name=cvx,red] at (\cx+0.15,-0.25) {$\bar{h}_1(\z,\zb)=0$};
+\node[anchor=north,name=cvx,red] at (\cx+0.15,-0.25) {$\fneb_1(\z,\zb)=0$};
 
 \end{tikzpicture}

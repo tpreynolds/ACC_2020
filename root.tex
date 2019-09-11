@@ -61,7 +61,7 @@ abstract.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{INTRODUCTION}
+\section{INTRODUCTION}\label{sec:intro}
 
 The point of this paper is to communicate the ``creeping phenonmenon'' that occurs in sequential convex programming algorithms that are designed a certain way. It seems to be a fundamental limitation of a certain class of algorithms. 
 
@@ -70,7 +70,7 @@ The point of this paper is to communicate the ``creeping phenonmenon'' that occu
 \item why is this important, and how is it useful?
 \end{itemize}
 
-\section{SEQUENTIAL CONVEX PROGRAMMING}
+\section{SEQUENTIAL CONVEX PROGRAMMING}\label{sec:scp}
 
 \begin{itemize}
 \item provide an overview of SCP methods, similar to a condensed version of CSM.
@@ -81,19 +81,22 @@ The point of this paper is to communicate the ``creeping phenonmenon'' that occu
 Consider the following optimization problem
 \begin{subequations}\label{eq:nlp}
 \begin{align}
-\min_z &\quad \ocost(\z) \label{eq:nlp_a} \\
-\text{subject to:} &\quad g_i(\z) \leq 0, \quad i \in \setIcvx \label{eq:nlp_b}\\
-&\quad h_i (\z) \leq 0, \quad i \in \setIncvx \label{eq:nlp_c}
+\min_z &\quad \ocost(\z) &&\null \label{eq:nlp_a} \\
+\text{s.t.} &\quad \fc_i(\z) \leq 0, &&\quad i \in \setIcvx \label{eq:nlp_b}\\
+&\quad \fni_i (\z) \leq 0, &&\quad i \in \setIncvx \label{eq:nlp_c} \\
+&\quad \fne_j(\z) = 0, &&\quad j \in \setEncvx \label{eq:nlp_d}
 \end{align}
 \end{subequations}
-where $\z\in\real^{\nz}$, $\setIcvx = \{1,\ldots,n_i\}$, $\setIncvx=\{n_i+1,\ldots,n_i+n_e\}$ represent the indices of the convex and non-convex inequality constraints respecitvely. We shall assume that the cost function $\ocost$ is convex, and that each $h_i$ is at least once differentiable almost everywhere. To simplify the notation, we assume that any equality constraints are represented by a pair of inequality constraints. Problem~\eqref{eq:nlp} is typically refered to as a nonlinear programming problem, but herein we shall refer to it as the original non-convex optimization problem (or simple the original problem). While there exist general purpose solvers that are able to solve the original problem (see, e.g.,~\cite{Gill1981,NocedalWright}), a current trend is to seek solutions by using iterative schemes that are based on convex optimization. 
+where $\z\in\real^{\nz}$, $\setIcvx = \{1,\ldots,m_i\}$, $\setIncvx=\{m_i+1,\ldots,m_i+n_i\}$ represent the indices of the convex and non-convex inequality constraints and $\setEncvx=\{1,\ldots,n_e\}$ represents the indices of non-convex equality constraints. We shall assume that the cost function $\ocost$ is convex, and that each $\fni_i$ and $\fne_j$ are at least once differentiable almost everywhere. To simplify the notation, we assume that any convex equality constraint is represented by a pair of convex inequality constraints. Problem~\eqref{eq:nlp} is typically refered to as a nonlinear programming problem, but herein we shall refer to it as the original non-convex optimization problem (or simple the original problem). While there exist general purpose solvers that are able to solve the original problem (see, e.g.,~\cite{Gill1981,NocedalWright}), a current trend is to seek solutions by using iterative schemes that are based on convex optimization. 
 
-The barrier to directly applying convex optimization methods is of course the set of non-convex constraints~\eqref{eq:nlp_c}. Sequential convex programming methods approximate each constraint in~\eqref{eq:nlp_c} with a convex function of the solution variable. Each convex approximation is computed using a reference solution, $\zb$, and takes the form
-\begin{equation}
-\bar{h}_i(\z,\zb) \leq 0, \quad i\in\setIncvx.
-\label{eq:cvx_approximation_general}
-\end{equation}
-There are several choices for $\bar{h}_i$: first- or second-order Taylor series approximations, inner convex approximations, or any other convex function that locally approximates the non-convex $h_i$. These approximations are inherently local; they accuracy decreases as $\|\z-\zb\|$ increases. In addition, consider the possible scenario where $\ocost$ and each $g_i$ are linear functions, and we choose each $\bar{h}_i$ to be a first-order approximation (i.e. the linearization of $h_i$ around $\zb$). In this case, the resulting optimization problem is unbounded below, a phenomenon refered to as \textit{artificial unboundedness}. To address the local nature of the approximations~\eqref{eq:cvx_approximation_general} and to avoid artificial unboundedness, we add a \textit{trust region} constraint of the form
+The barrier to directly applying convex optimization methods is of course the set of non-convex constraints~\eqref{eq:nlp_c} and~\eqref{eq:nlp_d}. Sequential convex programming methods approximate each of these constraints with a convex function of the solution variable, and iteratively update the approximations based on the solution of the resulting convex program. In this way, the original problem is transformed into a sequence of convex subproblems. Each convex approximation is computed using a reference solution, $\zb$, and takes the form
+\begin{subequations}\label{eq:cvx_approximation_general}
+\begin{align}
+\fnib_i(\z,\zb) \leq 0, \quad i\in\setIncvx, \label{eq:cvx_approximation_general_ineq} \\
+\fneb_j(\z,\zb) = 0, \quad j\in\setEncvx. \label{eq:cvx_approximation_general_eq}
+\end{align}
+\end{subequations}
+There are several choices for $\fnib_i$: first- or second-order Taylor series approximations, inner convex approximations, or any other convex function that locally approximates the non-convex $h_i$. The $\fneb_j$ on the other hand must be affine functions of $\z$. The approximations $\fnib_i$ and $\fneb_j$ are therefore inherently local; their accuracy decreases as $\|\z-\zb\|$ increases. As a separate issue, consider the possible scenario where $\ocost$ and each $g_i$ are linear functions, and we choose each $\fnib_i$ to be a first-order approximation (i.e., the linearization of $\fni_i$ around $\zb$). In this case, the resulting optimization problem is unbounded below, a phenomenon refered to as \textit{artificial unboundedness}. To address the local nature of the approximations~\eqref{eq:cvx_approximation_general} and to avoid artificial unboundedness, we add a \textit{trust region} constraint of the form
 \begin{equation}
 \| \z - \zb \|_q \leq \tr,
 \label{eq:trust_region}
@@ -101,17 +104,23 @@ There are several choices for $\bar{h}_i$: first- or second-order Taylor series 
 where $q=\{1,\,2,\,\infty\}$ and $\tr\in\realpp$ is a positive \textit{trust region radius}. Now we may formulate the following convex approximation to Problem~\eqref{eq:nlp}:
 \begin{subequations}\label{eq:cvx_tr}
 \begin{align}
-\min_z &\quad \ocost(\z) \label{eq:cvx_tr_a} \\
-\text{subject to:} &\quad g_i(\z) \leq 0, \quad i\in\setIcvx \label{eq:cvx_tr_b} \\
-&\quad \bar{h}_i(\z,\zb) \leq 0, \quad i\in\setIncvx \label{eq:cvx_tr_c}\\
-&\quad \| \z - \zb \|_q \leq \tr  \label{eq:cvx_tr_d}
+\min_z &\quad \ocost(\z) &&\null \label{eq:cvx_tr_a} \\
+\text{s.t.} &\quad \fc_i(\z) \leq 0, &&\quad i\in\setIcvx \label{eq:cvx_tr_b} \\
+&\quad \fnib_i(\z,\zb) \leq 0, &&\quad i\in\setIncvx \label{eq:cvx_tr_c}\\
+&\quad \fneb_j(\z,\zb) = 0, &&\quad j\in\setEncvx \label{eq:cvx_tr_d} \\
+&\quad \| \z - \zb \|_q \leq \tr  &&\null \label{eq:cvx_tr_e}
 \end{align}
 \end{subequations}
-Problem~\eqref{eq:cvx_tr} is now a convex program. However, directly solving Problem~\eqref{eq:cvx_tr} has proved difficult in several previous studies \todo{add studies}. In particular, Problem~\eqref{eq:cvx_tr} is susceptible to \textit{artificial infeasibility} that stems from two probable causes. First, the approximation~\eqref{eq:cvx_tr_c} and trust region~\eqref{eq:cvx_tr_d} can be incompatible, in the sense that $\mathcal{F}_1 = \{\z\,|\,\eqref{eq:cvx_tr_c}\text{ and }\eqref{eq:cvx_tr_d}\text{ are satisfied}\} = \emptyset$. This occurs when the reference $\zb$ is further than a distance $\tr$ from the set $\{\z\,|\,g_i(\z)\leq,~i\in\setIcvx\}$ under the $q$-norm. Second, the constraints~\eqref{eq:cvx_tr_b} and~\eqref{eq:cvx_tr_c} can be incompatible, in the sense that $\mathcal{F}_2 = \{\z\,|\,\eqref{eq:cvx_tr_b}\text{ and }\eqref{eq:cvx_tr_c}\text{ are satisfied}\}=\emptyset$. Each of these cases is shown graphically in Figure~\ref{fig:artificial_infeas}. Artificial infeasibility can be avoided by adding so-called \textit{virtual control} to~\eqref{eq:cvx_tr_c}:
-\begin{equation}
-\bar{h}_i(\z,\zb) - \vc_i \leq 0
-\end{equation}
-where $\vc_i > 0$. The vector $\vc\in\real^{n_e}$ is added as a solution variable, and the resulting augmented convex program is%
+Problem~\eqref{eq:cvx_tr} is a convex program. However, directly solving Problem~\eqref{eq:cvx_tr} has proved difficult in several previous studies \todo{add studies}. In particular, Problem~\eqref{eq:cvx_tr} is susceptible to \textit{artificial infeasibility} that stems from two probable causes. First, the approximations~\eqref{eq:cvx_tr_c}~\eqref{eq:cvx_tr_d} and trust region~\eqref{eq:cvx_tr_e} can be incompatible, in the sense that $\mathcal{F}_1 = \{\z\,|\,\eqref{eq:cvx_tr_c},~\eqref{eq:cvx_tr_d}\text{ and }\eqref{eq:cvx_tr_d}\text{ are satisfied}\} = \emptyset$. 
+%This may occur when the reference $\zb$ is further than a distance $\tr$ from the set $\{\z\,|\,g_i(\z)\leq0,~i\in\setIcvx\}$ under the $q$-norm. 
+Second, the constraints~\eqref{eq:cvx_tr_b},~\eqref{eq:cvx_tr_c} and~\eqref{eq:cvx_tr_d} can be incompatible, in the sense that $\mathcal{F}_2 = \{\z\,|\,\eqref{eq:cvx_tr_b}\text{ and }\eqref{eq:cvx_tr_c}~\eqref{eq:cvx_tr_d}\text{ are satisfied}\}=\emptyset$. Illustrations of these two cases are shown graphically in Figure~\ref{fig:artificial_infeas}. Artificial infeasibility can be avoided by adding so-called \textit{virtual control} to~\eqref{eq:cvx_tr_c}:
+\begin{subequations}\label{eq:virtual_control}
+\begin{align}
+\fnib_i(\z,\zb) - \vcc_i \leq 0 \\
+\fneb_j(\z,\zb) - \vc_j = 0
+\end{align}
+\end{subequations}
+where $\vcc_i > 0$. The vectors $\vcc\in\real^{n_i}$ and $\vc\in\real^{n_e}$ are added as solution variables, and the resulting augmented convex program is%
 \begin{figure}
 \centering
 \subfloat[$\mathcal{F}_1 = \emptyset$.]{\input{figs/tikz_artificial_infeas_a.tex}} \hfil
@@ -121,26 +130,27 @@ where $\vc_i > 0$. The vector $\vc\in\real^{n_e}$ is added as a solution variabl
 \end{figure}
 \begin{subequations}\label{eq:cvx_apprx}
 \begin{align}
-\min_{\z,\vc} &\quad \ocost(\z) + \lambda P(\nu) \label{eq:cvx_apprx_a} \\
-\text{subject to:} &\quad g_i(\z) \leq 0, \quad i\in\setIcvx \label{eq:cvx_apprx_b} \\
-&\quad \bar{h}_i(\z,\zb) - \vc_i \leq 0, \quad i\in\setIncvx \label{eq:cvx_apprx_c}\\
-&\quad \|\z-\zb\|_q \leq \tr \label{eq:cvx_apprx_d}
+\min_{\z,\vcc,\vc} &\quad \ocost(\z) + \lambda P(\vcc,\vc) &&\null \label{eq:cvx_apprx_a} \\
+\text{s.t.} &\quad \fc_i(\z) \leq 0, &&\quad i\in\setIcvx \label{eq:cvx_apprx_b} \\
+&\quad \fnib_i(\z,\zb) - \vcc_i \leq 0, &&\quad i\in\setIncvx \label{eq:cvx_apprx_c}\\
+&\quad \fneb_j(\z,\zb) - \vc_j = 0, &&\quad j\in\setEncvx \label{eq:cvx_apprx_d} \\
+&\quad \|\z-\zb\|_q \leq \tr &&\null  \label{eq:cvx_apprx_e}
 \end{align}
 \end{subequations}
-where $P : \real^{n_e} \rightarrow \realpp$ is a positive-definite penalty function and $\lambda>0$ is a user-selected weight. Typically $\lambda \gg 1$ to limit the use of virtual control only to cases when it is required to avoid artificial infeasibility.
+where $P : \real^{n_e}\times\real^{n_i} \rightarrow \realpp$ is a positive-definite penalty function and $\lambda>0$ is a user-selected weight. Typically $\lambda \gg 1$ to limit the use of virtual control only to cases when it is required to avoid artificial infeasibility.
 
-We shall refer to a solution to Problem~\eqref{eq:cvx_apprx} as an \textit{iterate}, and denote it by $(\z^*,\vc^*)$. Sequential convex programming algorithms iteratively solve Problem~\eqref{eq:cvx_apprx} and use resulting iterate to update $\zb$. Moreover, it is typical to use $(\z^*,\vc^*)$ to update the value of $\tr$, based on some assessment of the accuracy of the approximation in~\eqref{eq:cvx_approximation_general}. Methods for updating $\tr$ are discussed in~\sref{subsec:tr_updates}. The resulting sequence of solutions $\zb$ approaches a locally optimal solution of~\eqref{eq:nlp} under certain conditions and problem assumptions. There have been numerous papers that study the convergence properties of these algorithms, offering conditions/assumptions under which convergence is guaranteed to various flavors of minima~\todo{add citations}. This paper does not discuss \textit{whether} convergence is achieved or at what rate, but instead looks at an implicit property of SCP type algorithms that use the validity of the approximations to update the trust region size.
+We shall refer to a solution to Problem~\eqref{eq:cvx_apprx} as an \textit{iterate}, and denote it by $(\z^*,\vcc^*,\vc^*)$. Sequential convex programming algorithms iteratively solve Problem~\eqref{eq:cvx_apprx} and use resulting iterate to update $\zb$. Moreover, the iterate $(\z^*,\vcc^*,\vc^*)$ can be used to update the value of $\tr$, based on some assessment of the accuracy of the approximation in~\eqref{eq:cvx_approximation_general}. The resulting sequence of solutions $\zb$ approaches a locally optimal solution of~\eqref{eq:nlp} under certain conditions and problem assumptions. There have been numerous papers that study the convergence properties of these algorithms, offering conditions/assumptions under which convergence is guaranteed to various flavors of minima~\todo{add citations}. This paper does not discuss \textit{whether} convergence is achieved or at what rate, but instead looks at an implicit property of SCP type algorithms that use the validity of the approximations to update the trust region size.
 
 \subsection{Trust Region Updates}\label{subsec:tr_updates}
 
-Most sequential convex programming methods use a dynamically sized trust region. The size of $\tr$ is updated with each iteration according to a set of rules that are specified by the designer. These rules are designed to facilitate formal convergence proofs, and makes use of a performance metric that is based on $(\z^*,\vc^*)$ to do so. The performance metric can be thought of as a function that provides key feedback to the iterative process and guides convergence. To introduce a few common performance metrics, we first define the following functions
+Most sequential convex programming methods use a dynamically sized trust region. The size of $\tr$ is updated with each iteration according to a set of rules that are specified by the designer. These rules are designed to facilitate formal convergence proofs, and makes use of a performance metric that is based on $(\z^*,\vcc^*,\vc^*)$ to do so. The performance metric can be thought of as a function that provides key feedback to the iterative process and guides convergence. To introduce a few common performance metrics, we first define the following functions
 \begin{subequations}\label{eq:scp_costs}
 \begin{align}
-J(\z) &= \ocost(\z) + \lambda P\big( h(\z) \big) \label{eq:scp_costs_nl}\\
-L(\z) &= \ocost(\z) + \lambda P\big( \bar{h}(\z,\zb) \big) \label{eq:scp_costs_l}
+J(\z) &= \ocost(\z) + \lambda P\big( \fni(\z),\,\fne(\z) \big) \label{eq:scp_costs_nl}\\
+L(\z) &= \ocost(\z) + \lambda P\big( \fnib(\z,\zb),\,\fneb(\z,\zb) \big) \label{eq:scp_costs_l}
 \end{align}
 \end{subequations}
-where $h(\z) \in \real^{n_e}$ is the concatenation of the non-convex constraints from the original problem~\eqref{eq:nlp_c}, and similarly for $\bar{h}(\z,\zb)$. The cost functions in~\eqref{eq:scp_costs} can be thought of as measuring the optimality (via $\ocost$) and the feasibility (via $P(\cdot)$) of a candidate solution. The measure of feasibility is weighted by $\lambda$. The function~\eqref{eq:scp_costs_nl} measures this weighted cost with respect to the original non-convex problem~\eqref{eq:nlp}, while the function~\eqref{eq:scp_costs_l} measures the same weighted cost with respect to the approximated convex problem~\eqref{eq:cvx_apprx}. 
+where $\fni(\z) \in \real^{n_i}$ and $\fne(\z)\in\real^{n_e}$ are the concatenations of the non-convex constraints from the original problem~\eqref{eq:nlp_c}, and similarly for $\fnib(\z,\zb)$ and $\fneb(\z,\zb)$. The cost functions in~\eqref{eq:scp_costs} can be thought of as measuring the optimality (via $\ocost$) and the feasibility (via $P(\cdot,\cdot)$) of a candidate solution. The measure of feasibility is weighted by $\lambda$. The function~\eqref{eq:scp_costs_nl} measures this weighted cost with respect to the original non-convex problem~\eqref{eq:nlp}, while the function~\eqref{eq:scp_costs_l} measures the same weighted cost with respect to the approximated convex problem~\eqref{eq:cvx_apprx}. 
 
 We now introduce two commonly used performance metrics. The first is simply the \textit{relative error}
 \begin{equation}
@@ -167,7 +177,7 @@ We now make a brief technical comment before proceeding. First, the denominators
 
 \section{THE CREEPING PHENOMENON}
 
-Intuition would support the claim that a dynamically sized trust region would allow an SCP algorithm to take larger steps in regions where the convex approximation is the most accurate. In this section we demonstrate that actually the opposite can happen: dynamic trust regions can cause SCP algorithms to make \textit{slow} progress even when the convex approximation is quite accurate. This is not a universal phenonmenon in the sense that it applies equally to all problem scenarios. Rather, intrinsic properties of a the original non-convex constraints~\eqref{eq:nlp_c} can make one problem more susceptible to this phenomenon than others. We will explore this behavior for each of the performance metrics defined in~\sref{subsec:tr_updates} separately.
+Intuition would support the claim that a dynamically sized trust region would allow an SCP algorithm to take larger steps in regions where the convex approximation is the most accurate. In this section we demonstrate that actually the opposite can happen: dynamic trust regions can cause SCP algorithms to make \textit{slow} progress even when the convex approximation is quite accurate. This is not a universal phenonmenon in the sense that it applies equally to all problem scenarios. Rather, intrinsic properties of the original non-convex constraints~\eqref{eq:nlp_c} and the methods used to convexify them can make one problem more susceptible to this phenomenon than others. We will explore this behavior for each of the performance metrics defined in~\sref{subsec:tr_updates} separately.
 
 \subsection{Relative Error}\label{subsec:creep_rel_err}
 
@@ -178,46 +188,69 @@ We introduce the notion of internal resistance by studying algorithms that use t
 \end{equation} 
 Using~\eqref{eq:scp_costs} this can be rewritten as
 \begin{equation}
-P\big( h(\z^*) \big) < \frac{\phi(\z^*)}{\lambda} + 2 P\big( \bar{h}(\z^*,\zb) \big).
+P\big( \fni(\z^*),\,\fne(\z^*) \big) < \frac{\phi(\z^*)}{\lambda} + 2 P\big( \fnib(\z^*,\zb),\,\fneb(\z^*,\zb) \big).
 \label{eq:rel_err_accept_2}
 \end{equation}
 What~\eqref{eq:rel_err_accept_2} says is that in order for a step to be accepted, the degree to which the iterate $\z^*$ is infeasible for the original non-convex problem must be bounded by the right hand side. If inequality~\eqref{eq:rel_err_accept_2} is violated, we find ourselves in the top-right case in Figure~\ref{fig:scp_updates}: the iterate $\z^*$ is rejected, the trust region is shrunk by an amount $\alpha$ and the problem is resolved. The inequality~\eqref{eq:rel_err_accept_2} can also be interpreted as saying that the infeasibility of all accepted iterates with respect to the original non-convex problem is bounded from above by the sum of the (weighted) original cost and twice the amount of infeasibility in the convex approximation. 
 
-Loosely speaking, the problem of internal resistance appears when there is sufficient curvature in the set of non-convex functions $h$ that is not captured by the approximation $\bar{h}(\z,\zb)$. In this case, satisfaction of the convex constraints $\bar{h}(\z^*,\zb) \leq 0$ implies that $P\big(h(\z^*)\big)$ can be large, and thus the inequality~\eqref{eq:rel_err_accept_2} is violated. This is most often the case when $\bar{h}_i(\cdot,\zb)$ is an affine function of its argument, but $h_i(\cdot)$ is not (e.g., algorithms that only use first-order approximations, and/or problems where the $h_i(\cdot)$ are used to represent equality constraints). 
+Loosely speaking, the problem of internal resistance appears when there is sufficient curvature in the set of non-convex functions $h$ that is not captured by the approximations $\fnib(\z,\zb)$ or $\fneb(\z,\zb)$. In this case, satisfaction of the convex constraints~\eqref{eq:virtual_control} implies that $P\big(\fni(\z^*),\,\fne(\z^*)\big)$ can be large, and thus the inequality~\eqref{eq:rel_err_accept_2} is violated. This can happen quite easily when, for example, $\fne(\z)$ has a large Lipschitz constant in the set defined by the trust region, and the affine approximation $\fneb_i(\cdot,\zb)$ cannot sufficient capture the the curvature. We provide a specific example of this in~\sref{subsec:toy_example}.
 
 \subsection{Relative Decrement}\label{subsec:crepp_rel_dec}
 
-Algorithms that use the relative decrement as the metric with which to update the reference and trust region size experience the problem internal resistance in a slightly different way. Internal resistance will only arise when the reference is \textit{feasible} (or nearly so) for the original non-convex problem. In this case, we have $P\big(h(\z)\big)=0$. To see why, first recall that the denominator in~\eqref{eq:pmet_rel_decrement} is always nonnegative, and that an iterate may be rejected when $\pmet<\pmet_0$ for $\pmet_0>0$. Similar to the relative error case, we shall assume that $\pmet_0=0$ so that the following results are sufficient for any chosen value. If $\pmet_0=0$, then according to the rules in Figure~\ref{fig:scp_updates} an iterate will only accepted if the \textit{numerator} of~\eqref{eq:pmet_rel_decrement} is strictly positive. 
-
-Hence for an accepted step we have
+Algorithms that use the relative decrement as the metric with which to update the reference and trust region size experience the problem internal resistance in a slightly different way. Internal resistance will only arise when the reference is \textit{feasible} (or nearly so) for the original non-convex problem. In this case, we have $P\big(\fni(\z),\,\fne(\z)\big)=0$. To see why, first recall that the denominator in~\eqref{eq:pmet_rel_decrement} is always nonnegative, and that an iterate may be rejected when $\pmet<\pmet_0$ for $\pmet_0>0$. Similar to the relative error case, we shall assume that $\pmet_0=0$ so that the following results are sufficient for any chosen value. If $\pmet_0=0$, then according to the rules in Figure~\ref{fig:scp_updates} an iterate will only accepted if the \textit{numerator} of~\eqref{eq:pmet_rel_decrement} is strictly positive. Hence for an accepted step we have
 \begin{subequations}\label{eq:rel_dec_bound}
-\begin{align}
-0 &< J(\zb) - J(\z^*) \label{eq:rel_dec_bound_a}\\
-0 &< \ocost(\zb) - \ocost(\z^*) - \lambda P\big( h(\z^*) \big) \label{eq:rel_dec_bound_b}\\
-P\big( h(\z^*) \big) &< \frac{\ocost(\zb) - \ocost(\z^*)}{\lambda} \label{eq:rel_dec_bound_c}
-\end{align}
+\begin{gather}
+J(\zb) - J(\z^*) > 0 \label{eq:rel_dec_bound_a}\\
+\ocost(\zb) - \ocost(\z^*) - \lambda P\big( \fni(\z^*),\,\fne(\z^*) \big) > 0 \label{eq:rel_dec_bound_b}\\
+ \frac{\ocost(\zb) - \ocost(\z^*)}{\lambda}  > P\big( \fni(\z^*),\,\fne(\z^*) \big) \label{eq:rel_dec_bound_c}
+\end{gather}
 \end{subequations}
 which says that the degree to which the iterate $\z^*$ is infeasible for the original non-convex problem is bounded by the (weighted) reduction in original cost. If inequality~\eqref{eq:rel_dec_bound_c} is violated, we find ourselves in the bottom-left case in Figure~\ref{fig:scp_updates}: the iterate will be rejected, the trust region shrunk, and the problem is resolved. 
 
 \begin{remark}
-The inequality~\eqref{eq:rel_dec_bound_b} also illuminates the fact that if the reference $\zb$ is feasible for the original non-convex problem, then an accepted iterate must (strictly) decrease the original cost. This is due to the fact that $\lambda>0$ and $P(\cdot)$ is positive definite.
+The inequality~\eqref{eq:rel_dec_bound_b} also illuminates the fact that if the reference $\zb$ is feasible for the original non-convex problem, then an accepted iterate must (strictly) decrease the original cost. This is due to the fact that $\lambda>0$ and $P(\cdot,\cdot)$ is positive definite.
 \end{remark}
 
-Since $\zb$ is feasible for the original problem, we know that actually $\zb$ is a feasible point for Problem~\eqref{eq:cvx_tr} as well (the convex approximation with no virtual control). Thus the optimal solution of Problem~\eqref{eq:cvx_apprx} will not use any virtual control provided that $\lambda$ is large enough\footnote{There is a non-empty feasible set that uses no virtual control, solutions outside this set necessarily increase the cost for large values of $\lambda$.}. The solution $\z^*$ will therefore satisfy $\bar{h}(\z^*,\zb)\leq 0$. If $\bar{h}(\cdot,\zb)$ does not adequately capture the curvature of $h(\cdot)$, then inequality~\eqref{eq:rel_dec_bound_c} is more likely to be violated. This implies that for a given set of non-convex functions $h(\cdot)$, for each feasible $\zb$ there is a \textit{maximum trust region size} that is implicitly defined by the method used to ``convexify'' the $h(\cdot)$ and the largest achievable reduction in cost (weighted by $1/\lambda$). For $\lambda\gg1$ the maximum trust region size such that~\eqref{eq:rel_dec_bound_c} is satisfied can be small, causing the algorithm to take small incremental steps that are each nearly feasible for the original non-convex problem. This is depicted in Figure~\todo{add fig}.
+Since $\zb$ is feasible for the original problem, we know that actually $\zb$ is a feasible point for Problem~\eqref{eq:cvx_tr} as well (the convex approximation with no virtual control). Thus the optimal solution of Problem~\eqref{eq:cvx_apprx} will not use any virtual control provided that $\lambda$ is large enough\footnote{There exists a non-empty feasible set that uses no virtual control, solutions that are not in this set necessarily increase the cost for large values of $\lambda$.}. The solution $\z^*$ will therefore satisfy $\fnib(\z^*,\zb)\leq 0$ and $\fneb(\z^*,\zb)=0$. If either $\fnib(\cdot,\zb)$ (resp.~$\fneb(\cdot,\zb)$) does not adequately capture the behavior of $\fni(\cdot)$ (resp.~$\fne(\cdot)$), then inequality~\eqref{eq:rel_dec_bound_c} is likely to be violated. This implies that for a given set of non-convex functions $\fni(\cdot)$ and $\fne(\cdot)$, for every feasible $\zb$ there is a \textit{maximum trust region size} that is implicitly defined by the method used to ``convexify'' the original problem and the largest achievable reduction in cost (weighted by $1/\lambda$). For $\lambda\gg1$ the maximum trust region size such that~\eqref{eq:rel_dec_bound_c} is satisfied can be small, causing the algorithm to take small incremental steps that are each nearly feasible for the original non-convex problem. This is depicted in Figure~\todo{add fig} and is the essence of what we refer to as internal resistance.
 
 \subsection{A Simple Example}\label{subsec:toy_example}
 
-This section provides a simple example that exhibits the crawling phenomenon. Consider the following optimization problem that uses $\z=(z_1,z_2)\in\real^2$ for plotting purposes
+This section provides a simple example that exhibits the crawling phenomenon. Consider the following optimization problem in the variable $\z=(z_1,z_2)\in\real^2$
 \begin{subequations}\label{eq:toy_prob}
 \begin{align}
-\min_z &\quad z_2 \label{eq:toy_prob_a}\\
-\text{s.t.} &\quad g_1(\z) = -z_2 - \tfrac{4}{3} z_1 - \tfrac{2}{3} \leq 0 \label{eq:toy_prob_b}\\
-&\quad g_2(\z) = \z - 2 \leq 0 \label{eq:toy_prob_c}\\
-&\quad g_3(\z) = -\z - 2 \leq 0 \label{eq:toy_prob_d}\\
-&\quad h_1(\z) = z_2 - z_1^4 + 2z_1^3 - 1.2z_1^2 - 2z_1 = 0 \label{eq:toy_prob_e}
+\min_{\z} &\quad z_1+z_2 \label{eq:toy_prob_a}\\
+\text{s.t.} &\quad \fc_1(\z) = -z_2 - \tfrac{4}{3} z_1 - \tfrac{2}{3} \leq 0 \label{eq:toy_prob_b}\\
+&\quad \fc_2(\z) = \z - 2 \leq 0 \label{eq:toy_prob_c}\\
+&\quad \fc_3(\z) = -\z - 2 \leq 0 \label{eq:toy_prob_d}\\
+&\quad \fne_1(\z) = z_2 - z_1^4 + 2z_1^3 - 1.2z_1^2 - 2z_1 = 0 \label{eq:toy_prob_e}
 \end{align}
 \end{subequations}
-This problem is non-convex due to the quartic constraint~\eqref{eq:toy_prob_e}.
+This problem is non-convex due to the quartic constraint~\eqref{eq:toy_prob_e}. Following the procedure outlined in~\sref{sec:scp}, we can convexify Problem~\eqref{eq:toy_prob} for use in an SCP algorithm by introducing the reference $\zb\in\real^2$ and solution variable $\vc\in\real$:
+\begin{subequations}\label{eq:toy_prob_cvx}
+\begin{align}
+\min_{\z,\vc} &\quad z_1+z_2 + \lambda P(\vc) \\
+\text{s.t.} &\quad \fc_1(\z) \leq 0,~\fc_2(\z)\leq0,~\fc_3(\z)\leq0 \\
+&\quad \fne(\zb) + \jacobev{\fne_1}{z}{\zb}\tran\left( \z - \zb \right) + \vc = 0 \\
+&\quad \twonorm{\z - \zb} \leq \eta
+\end{align}
+\end{subequations}
+The data used for this particular example are an initial trust region of $\eta=0.1$, an initial reference of $\zb=(1.5,1.5)$, a penalty function $P(\vc) = | \vc |$ and $\lambda=10^3$. The values used to update the trust region size are $\pmet_0=0,\,\pmet_1=0.1,\,\pmet_2=0.9$ and $\alpha=1.5,\,\beta=2.0$. Figure~\ref{fig:toy_prob_soln} shows the resulting sequence of iterates for both performance metrics, as well as the value of $\pmet$ in each case as a function of the iteration number. Figures~\ref{fig:toy_prob_soln_a} and~\ref{fig:toy_prob_soln_b} demonstrate the crawling phenomenon; very little progress is made past the point where the curvature of the non-convex constraint begins to increase. Notice that fairly rapid progress is made initially in both cases when the non-convex function is locally quite linear. Figure~\ref{fig:toy_prob_soln_c} reveals that a limit cycle is reached whereby the approximation accuracy slowly worsens until the trust region is shrunk (the sharp changes in $\pmet$ indicate when the trust region was shrunk). 
+
+\begin{figure*}
+\centering
+\subfloat[Relative decrement solution.\label{fig:toy_prob_soln_a}]{\includegraphics[width=0.33\textwidth]{figs/acc_toy_problem}} 
+\subfloat[Relative error solution.\label{fig:toy_prob_soln_b}]{\includegraphics[width=0.33\textwidth]{figs/acc_toy_problem_relerr}} 
+\subfloat[The performance metric $\pmet$. Color regions correspond to Figure~\ref{fig:scp_updates}.\label{fig:toy_prob_soln_c}]{\includegraphics[width=0.33\textwidth]{figs/acc_toy_problem_rho}}
+\caption{Solutions to Problem~\eqref{eq:toy_prob_cvx} across 100 iterations showing the crawling phenomenon.}
+\label{fig:toy_prob_soln}
+\end{figure*}
+
+% \subsubsection{Discussion}
+
+It is important to recognize the nuances of this toy example correctly and resist the temptation to draw overly general conclusions from it. For other choices of initial condition, the crawling phenomenon is avoided. For example, convergence to the local minimum from an initial reference in the shaded gray region is quite rapid, often terminting in ten or fewer iterations. There are, however, relatively large regions in the upper-middle and upper-right of the area plotted in Figure~\ref{fig:toy_prob_soln} from which the phenomenon is observed. We are merely pointing out that the crawling phenomenon \textit{can} happen, not that it \textit{will}. 
+
+Moreover, it is obvious for this toy example that (i) the crawling phenomenon is occuring and (ii) that it occurs away from either minimum. This is only obvious because we know exactly where each minimum is (i.e., we can plot the cost lines and constraints). The trouble, in general, is that this is not possible. Higher dimensional non-convex problems for which no analytical solution is known do not permit the same observations that are obvious for this toy problem. The crawling phenomenon is effectively unobservable in the more challenging problems for which SCP methods are typically implemented on. Does slow progress mean that we have reached a local minimum? No. Arriving at a local minimum indeed implies that adjacent iterates will be close together (in the sense that $\|\z^*-\zb\|$ is small), but the converse is not necessarily true. 
+
 
 
 % % introduce two ways of computing the progress metric; dJ/dL and dL/L. Both are susceptible to creeping.
@@ -264,31 +297,6 @@ This problem is non-convex due to the quartic constraint~\eqref{eq:toy_prob_e}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% \begin{thebibliography}{99}
-
-% \bibitem{c1} G. O. Young, ÒSynthetic structure of industrial plastics (Book style with paper title and editor),Ó 	in Plastics, 2nd ed. vol. 3, J. Peters, Ed.  New York: McGraw-Hill, 1964, pp. 15Ð64.
-% \bibitem{c2} W.-K. Chen, Linear Networks and Systems (Book style).	Belmont, CA: Wadsworth, 1993, pp. 123Ð135.
-% \bibitem{c3} H. Poor, An Introduction to Signal Detection and Estimation.   New York: Springer-Verlag, 1985, ch. 4.
-% \bibitem{c4} B. Smith, ÒAn approach to graphs of linear forms (Unpublished work style),Ó unpublished.
-% \bibitem{c5} E. H. Miller, ÒA note on reflector arrays (Periodical styleÑAccepted for publication),Ó IEEE Trans. Antennas Propagat., to be publised.
-% \bibitem{c6} J. Wang, ÒFundamentals of erbium-doped fiber amplifiers arrays (Periodical styleÑSubmitted for publication),Ó IEEE J. Quantum Electron., submitted for publication.
-% \bibitem{c7} C. J. Kaufman, Rocky Mountain Research Lab., Boulder, CO, private communication, May 1995.
-% \bibitem{c8} Y. Yorozu, M. Hirano, K. Oka, and Y. Tagawa, ÒElectron spectroscopy studies on magneto-optical media and plastic substrate interfaces(Translation Journals style),Ó IEEE Transl. J. Magn.Jpn., vol. 2, Aug. 1987, pp. 740Ð741 [Dig. 9th Annu. Conf. Magnetics Japan, 1982, p. 301].
-% \bibitem{c9} M. Young, The Techincal Writers Handbook.  Mill Valley, CA: University Science, 1989.
-% \bibitem{c10} J. U. Duncombe, ÒInfrared navigationÑPart I: An assessment of feasibility (Periodical style),Ó IEEE Trans. Electron Devices, vol. ED-11, pp. 34Ð39, Jan. 1959.
-% \bibitem{c11} S. Chen, B. Mulgrew, and P. M. Grant, ÒA clustering technique for digital communications channel equalization using radial basis function networks,Ó IEEE Trans. Neural Networks, vol. 4, pp. 570Ð578, July 1993.
-% \bibitem{c12} R. W. Lucky, ÒAutomatic equalization for digital communication,Ó Bell Syst. Tech. J., vol. 44, no. 4, pp. 547Ð588, Apr. 1965.
-% \bibitem{c13} S. P. Bingulac, ÒOn the compatibility of adaptive controllers (Published Conference Proceedings style),Ó in Proc. 4th Annu. Allerton Conf. Circuits and Systems Theory, New York, 1994, pp. 8Ð16.
-% \bibitem{c14} G. R. Faulhaber, ÒDesign of service systems with priority reservation,Ó in Conf. Rec. 1995 IEEE Int. Conf. Communications, pp. 3Ð8.
-% \bibitem{c15} W. D. Doyle, ÒMagnetization reversal in films with biaxial anisotropy,Ó in 1987 Proc. INTERMAG Conf., pp. 2.2-1Ð2.2-6.
-% \bibitem{c16} G. W. Juette and L. E. Zeffanella, ÒRadio noise currents n short sections on bundle conductors (Presented Conference Paper style),Ó presented at the IEEE Summer power Meeting, Dallas, TX, June 22Ð27, 1990, Paper 90 SM 690-0 PWRS.
-% \bibitem{c17} J. G. Kreifeldt, ÒAn analysis of surface-detected EMG as an amplitude-modulated noise,Ó presented at the 1989 Int. Conf. Medicine and Biological Engineering, Chicago, IL.
-% \bibitem{c18} J. Williams, ÒNarrow-band analyzer (Thesis or Dissertation style),Ó Ph.D. dissertation, Dept. Elect. Eng., Harvard Univ., Cambridge, MA, 1993. 
-% \bibitem{c19} N. Kawasaki, ÒParametric study of thermal and chemical nonequilibrium nozzle flow,Ó M.S. thesis, Dept. Electron. Eng., Osaka Univ., Osaka, Japan, 1993.
-% \bibitem{c20} J. P. Wilkinson, ÒNonlinear resonant circuit devices (Patent style),Ó U.S. Patent 3 624 12, July 16, 1990. 
-
-% \end{thebibliography}
 
 \bibliographystyle{ieeetr}
 \bibliography{references}

@@ -26,18 +26,18 @@
 \filldraw[black] (\cx,\cy) circle (1.5pt) node[anchor=south east,yshift=-0.1cm] {$\zb$};
 % draw ncvx constraint
 \draw[thick,domain=-1:\hy,smooth,variable=\x,blue] plot ({\x},{\slp*\x*\x});
-\node[anchor=south,name=ncvx,blue] at (-1,0.5) {$h_1(\z)=0$};
+\node[anchor=south,name=ncvx,blue] at (-1,0.5) {$\fne_1(\z)=0$};
 % draw cvx linearization
 \draw[thick,domain=-0.5:\hy,smooth,variable=\x,dashed,red] plot ({\x},{2*\slp*\xintrsct*\x-\slp*\xintrsct*\xintrsct});
-\node[anchor=north,name=cvx,red] at (-0.5,-0.25) {$\bar{h}_1(\z,\zb)=0$};
+\node[anchor=north,name=cvx,red] at (-0.5,-0.25) {$\fneb_1(\z,\zb)=0$};
 % draw inequality g1
 \draw[thick,domain=-0.5:\hy,smooth,variable=\x,darkgreen] plot ({\x},{\mMm*\x+\bBb});
 \draw[darkgreen,->] (\cXx-0.0707,\mMm*\cXx+\bBb+0.0707) -- ++(\dXx,-\dXx/\mMm);
-\node[anchor=south,darkgreen] at (-1,1.1) {$g_1(\z) \leq 0$};
+\node[anchor=south,darkgreen] at (-1,1.1) {$\fc_1(\z) \leq 0$};
 % draw inequality g2
 \draw[thick,darkgreen] (\bx,-1) -- (\bx,1.5);
 \draw[darkgreen,->] (\bx-0.1,-0.8) -- ++(-0.4,0); 
-\node[anchor=north,darkgreen] at (\bx,-1) {$g_2(\z)\leq0$};
+\node[anchor=north,darkgreen] at (\bx,-1) {$\fc_2(\z)\leq0$};
 
 
 \end{tikzpicture}
