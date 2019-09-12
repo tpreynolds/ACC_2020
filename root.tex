@@ -251,21 +251,16 @@ It is important to recognize the nuances of this toy example correctly and resis
 
 Moreover, it is obvious for this toy example that (i) the crawling phenomenon is occuring and (ii) that it occurs away from either minimum. This is only obvious because we know exactly where each minimum is (i.e., we can plot the cost lines and constraints). The trouble, in general, is that this is not possible. Higher dimensional non-convex problems for which no analytical solution is known do not permit the same observations that are obvious for this toy problem. The crawling phenomenon is effectively unobservable in the more challenging problems for which SCP methods are typically implemented on. Does slow progress mean that we have reached a local minimum? No. Arriving at a local minimum indeed implies that adjacent iterates will be close together (in the sense that $\|\z^*-\zb\|$ is small), but the converse is not necessarily true. 
 
-
-
-% % introduce two ways of computing the progress metric; dJ/dL and dL/L. Both are susceptible to creeping.
-% \begin{itemize}
-% \item introduce the creeping phenomenon, provide a graphical description
-% \item include an example of what this can look like
-% \end{itemize}
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{POSSIBLE REMEDIES: HYBRID ALGORITHMS}
 
-\begin{itemize}
-\item discuss possible remedies; if we know we have a feasible start, what can we do?
-\item soft trust region methods?
-\end{itemize}
+This section will discuss possible remedies to the crawling phenomenon that has been hitherto described. What can be discerned from Figure~\ref{fig:toy_prob_soln} is that SCP methods are typically quite good at quickly reaching feasibility. The cost of using virtual control dominates the original problems cost. Another advantage is the fact that rapid progress can be made towards an optimum in regions where the equality constraints are well-approximated by affine functions.
+
+% \begin{itemize}
+% \item discuss possible remedies; if we know we have a feasible start, what can we do?
+% \item soft trust region methods?
+% \end{itemize}
 
 \section{CONCLUSIONS}
 
