@@ -40,9 +40,6 @@
 \thanks{The authors are with the W.E. Boeing Department of Aeronautics and Astronautics,
         University of Washington, Seattle, WA, USA.
         {\tt\small \{tpr6,mesbahi\}@uw.edu}}%
-% \thanks{$^{2}$Bernard D. Researcher is with the FacultyDepartment of Electrical Engineering, Wright State University,
-%         Dayton, OH 45435, USA
-%         {\tt\small b.d.researcher@ieee.org}}%
 }
 
 \begin{document}
@@ -63,19 +60,26 @@ abstract.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{INTRODUCTION}\label{sec:intro}
 
-The point of this paper is to communicate the ``creeping phenonmenon'' that occurs in sequential convex programming algorithms that are designed a certain way. It seems to be a fundamental limitation of a certain class of algorithms. 
+Solving non-convex optimization problems is hard. Unfortunately, non-convex problems are pervasive in the optimal control literature and practical engineering system design. Examples include most optimal control problems with nonlinear dynamics, or problems that have non-convex state or control constraints that cannot ``losslessly convexified''~\cite{Acikmese2011,Blackmore2012b}. Such problems can be found in fields ranging from aerospace~\cite{SzmukReynolds2018,Lee2017,Liu2014} and mechanical truss design~\cite{Beck2010} to power grid technology~\cite{Wei2017} and computer vision~\cite{Jiang2007}. For these classes of optimal control and parameter optimization problems, sequential convex programming (SCP) is one of several types of solution methods that can be used. The purpose of this paper is to demonstrate that certain classes of SCP algorithms are susceptible to what we call the \textit{crawling phenomenon}. The crawling phenomenon is a result of the  As SCP algorithms become increasingly popular, it is important to recognize the limitations of such methods. At the same time, knowledge of such limitations provides an opportunity to design better algorithms that are not restricted in the same ways.
 
-\begin{itemize}
-\item what is the purpose of the paper?
-\item why is this important, and how is it useful?
-\end{itemize}
+All SCP techniques stem from the same idea: solve a sequence of convex approximations to the original non-convex problem, each time using the solution of a previous convex problem to improve the approximation. Sequential convex programming is a natural approach to solving challenging non-convex optimization problems; convex programming is generally thought of as ``easy'' (from a computational perspective) and the associated theoretical backing is well established~\cite{Rockafellar1970,BoydBook}. The difficulties lie in \textit{how} the convex approximations are formulated, what structure is devised for updating the solutions and measuring progress towards an optimal one, and how all of this lends itself to theoretical analysis. 
+
+The idea to solve non-convex optimization problems by iteratively approximating them as convex programs was perhaps first developed using branch and bound techniques~\cite{Falk1969,Soland1971,Horst1984}. Important practical algorithms emerged from these early investigations, e.g., McCormick relaxations~\cite{McCormick1976}, that continue to be developed with increasing computational abilities~\cite{Mitsos2009,Tsoukalas2014,Singer2004}.
+
+Likely the simplest class of SCP methods is that of sequential linear programming (SLP). Betrayed by the name, these algorithms linearize all nonlinear functions about a current reference solution to obtain a linear program. This linear program is solved (with a trust region) to obtain a new reference, and the process repeats. Early developments came from the petroleum industry and were intended to solve large problems~\cite{Palacios-Gomez1982,Byrd2004}. From a computational perspective, SLP is attractive due to the maturity of the simplex algorithm. However, over time solvers for more general classes of convex optimization problems have advanced to the point that restricting oneself to linear programs to save computational resources is unnecessary (except perhaps for extremely large problems).  Related to SLP, difference of convex functions, or d.c.~programming, can also be thought of as a (sub-)class of SCP methods~\cite{Horst1999}. The convex-concave procedure introduced in~\cite{Yuille2002} is one example of a successful implementation of these ideas, and it has been extensively applied to support vector machines and principal component analysis in the field of machine learning~\cite{Lanckriet2009}. 
+
+Another important class of SCP methods is that of sequential quadratic programming (SQP). The works of Han~\cite{Han1977}, Powell~\cite{Powell1978a,Powell1986}, Boggs and Tolle~\cite{Boggs1982,Boggs1989,Boggs1996} and others~\cite{Fukushima1986} appear to have exerted significant influence on the early developments of SQP-type algorithms, and their impact remains evident today. SQP methods approximate a non-convex program by a quadratic program by using a reference solution to form a quadratic approximation of the original problem's Lagrangian. Modern developments encompass both theoretical and applied domains~\cite{Betts1993,Lawrence2003}, and SQP algorithms are arguably the most mature class of SCP methods~\cite{Gill2005}. The use of quadratic programs limits the type of constraints that can be enforced to linear ones. Many problems of interest are, however, subject to nonlinear constraints (both convex and non-convex).  
+
+The class of algorithms discussed herein are therefore those that solve a more general convex problem at each iteration (i.e., no restriction to an LP or QP). More specifically, we discuss algorithms that are of trust region type and use slack variables to ensure that each convex approximation is always feasible. This class of methods has been developed largely over the last decade, and represents one of the most active areas of current development. Mao et. al. have presented the \texttt{SCvx} algorithm~\cite{Mao2016a,Mao2018}, and Bonalli et. al.~\cite{Bonalli2019,Bonalli2019b} have presented the GuSTO algorithm. The novelty of these works lie in the generality of the technical proofs, which hold for any class of convex constraints after non-convexities have been linearized. This paper shows that these types of algorithms can suffer from the crawling phenomenon, whereby the algorithm will make slow progress in regions where the convex approximation does not sufficiently capture the curvature of a non-convex constraint. The crawling phenomenon is shown to be a fundamental limitation that is induced by the update rules that govern how the trust region size is updated between iterations. These update rules are a key component of the theoretical analysis that provides guarantees of convergence to (local) minina of the original non-convex problem as well as convergence rate.
+
+This paper is organized as follows. First, we provide a general description of sequential convex programming in~\sref{sec:scp} that defines the nomenclature and notation that is used throughout. In~\sref{sec:crawling} we introduce the crawling phenomenon and provide an example of how it can manifest in certain non-convex optimization problems. Section~\ref{sec:remedies} then provides some discussion on algorithms that may avoid the crawling phenomenon, and~\sref{sec:conclusion} offers concluding remarks.
 
 \section{SEQUENTIAL CONVEX PROGRAMMING}\label{sec:scp}
 
-\begin{itemize}
-\item provide an overview of SCP methods, similar to a condensed version of CSM.
-\item provide a generalized algorithmic framework for the class of algorithms susceptible to the creeping phenomenon.
-\end{itemize}
+% \begin{itemize}
+% \item provide an overview of SCP methods, similar to a condensed version of CSM.
+% \item provide a generalized algorithmic framework for the class of algorithms susceptible to the crawling phenomenon.
+% \end{itemize}
 % only go so far as to define the linear and nonlinear costs as "original cost" plus "feasibility measure". 
 
 Consider the following optimization problem
@@ -111,7 +115,7 @@ where $q=\{1,\,2,\,\infty\}$ and $\tr\in\realpp$ is a positive \textit{trust reg
 &\quad \| \z - \zb \|_q \leq \tr  &&\null \label{eq:cvx_tr_e}
 \end{align}
 \end{subequations}
-Problem~\eqref{eq:cvx_tr} is a convex program. However, directly solving Problem~\eqref{eq:cvx_tr} has proved difficult in several previous studies \todo{add studies}. In particular, Problem~\eqref{eq:cvx_tr} is susceptible to \textit{artificial infeasibility} that stems from two probable causes. First, the approximations~\eqref{eq:cvx_tr_c}~\eqref{eq:cvx_tr_d} and trust region~\eqref{eq:cvx_tr_e} can be incompatible, in the sense that $\mathcal{F}_1 = \{\z\,|\,\eqref{eq:cvx_tr_c},~\eqref{eq:cvx_tr_d}\text{ and }\eqref{eq:cvx_tr_d}\text{ are satisfied}\} = \emptyset$. 
+Problem~\eqref{eq:cvx_tr} is a convex program. However, directly solving Problem~\eqref{eq:cvx_tr} has proved to be empirically difficult. In particular, Problem~\eqref{eq:cvx_tr} is susceptible to \textit{artificial infeasibility} that stems from two probable causes. First, the approximations~\eqref{eq:cvx_tr_c}~\eqref{eq:cvx_tr_d} and trust region~\eqref{eq:cvx_tr_e} can be incompatible, in the sense that $\mathcal{F}_1 = \{\z\,|\,\eqref{eq:cvx_tr_c},~\eqref{eq:cvx_tr_d}\text{ and }\eqref{eq:cvx_tr_d}\text{ are satisfied}\} = \emptyset$. 
 %This may occur when the reference $\zb$ is further than a distance $\tr$ from the set $\{\z\,|\,g_i(\z)\leq0,~i\in\setIcvx\}$ under the $q$-norm. 
 Second, the constraints~\eqref{eq:cvx_tr_b},~\eqref{eq:cvx_tr_c} and~\eqref{eq:cvx_tr_d} can be incompatible, in the sense that $\mathcal{F}_2 = \{\z\,|\,\eqref{eq:cvx_tr_b}\text{ and }\eqref{eq:cvx_tr_c}~\eqref{eq:cvx_tr_d}\text{ are satisfied}\}=\emptyset$. Illustrations of these two cases are shown graphically in Figure~\ref{fig:artificial_infeas}. Artificial infeasibility can be avoided by adding so-called \textit{virtual control} to~\eqref{eq:cvx_tr_c}:
 \begin{subequations}\label{eq:virtual_control}
@@ -139,7 +143,7 @@ where $\vcc_i > 0$. The vectors $\vcc\in\real^{n_i}$ and $\vc\in\real^{n_e}$ are
 \end{subequations}
 where $P : \real^{n_e}\times\real^{n_i} \rightarrow \realpp$ is a positive-definite penalty function and $\lambda>0$ is a user-selected weight. Typically $\lambda \gg 1$ to limit the use of virtual control only to cases when it is required to avoid artificial infeasibility.
 
-We shall refer to a solution to Problem~\eqref{eq:cvx_apprx} as an \textit{iterate}, and denote it by $(\z^*,\vcc^*,\vc^*)$. Sequential convex programming algorithms iteratively solve Problem~\eqref{eq:cvx_apprx} and use resulting iterate to update $\zb$. Moreover, the iterate $(\z^*,\vcc^*,\vc^*)$ can be used to update the value of $\tr$, based on some assessment of the accuracy of the approximation in~\eqref{eq:cvx_approximation_general}. The resulting sequence of solutions $\zb$ approaches a locally optimal solution of~\eqref{eq:nlp} under certain conditions and problem assumptions. There have been numerous papers that study the convergence properties of these algorithms, offering conditions/assumptions under which convergence is guaranteed to various flavors of minima~\todo{add citations}. This paper does not discuss \textit{whether} convergence is achieved or at what rate, but instead looks at an implicit property of SCP type algorithms that use the validity of the approximations to update the trust region size.
+We shall refer to a solution to Problem~\eqref{eq:cvx_apprx} as an \textit{iterate}, and denote it by $(\z^*,\vcc^*,\vc^*)$. Sequential convex programming algorithms iteratively solve Problem~\eqref{eq:cvx_apprx} and use resulting iterate to update $\zb$. Moreover, the iterate $(\z^*,\vcc^*,\vc^*)$ can be used to update the value of $\tr$, based on some assessment of the accuracy of the approximation in~\eqref{eq:cvx_approximation_general}. The resulting sequence of solutions $\zb$ approaches a locally optimal solution of~\eqref{eq:nlp} under certain conditions and problem assumptions. There have been numerous papers that study the convergence properties of these algorithms, offering conditions/assumptions under which convergence is guaranteed to various flavors of minima~\cite{Mao2016a,Mao2018,Bonalli2019,Bonalli2019b}. This paper does not discuss \textit{whether} convergence is achieved or at what rate, but instead looks at an implicit property of SCP type algorithms that use the accuracy of the convex approximations to update the trust region size.
 
 \subsection{Trust Region Updates}\label{subsec:tr_updates}
 
@@ -175,13 +179,13 @@ To decide which case we are in for a given iteration (accept/reject, shrink/keep
 
 We now make a brief technical comment before proceeding. First, the denominators in~\eqref{eq:pmet_rel_error} and~\eqref{eq:pmet_rel_decrement} must be verified to be non-zero before computing the value of $\pmet$. In the case of~\eqref{eq:pmet_rel_error}, a sufficient condition to avoid this is $\ocost(\z)>0$ for all feasible $\z$. In the case of~\eqref{eq:pmet_rel_decrement}, a zero denominator actually implies that the iterations can be terminated, since $L(\z^*) \leq L(\zb) = J(\zb)$ (note that this implies the denominator is always nonnegative). If $J(\zb)-L(\z^*)=0$, then the optimal solution found by solving~\eqref{eq:cvx_apprx} is exactly the reference solution, and the iterations may be stopped. Therefore for either performance metric, divide-by-zero conditions can be avoided.   
 
-\section{THE CREEPING PHENOMENON}
+\section{THE CRAWLING PHENOMENON}\label{sec:crawling}
 
 Intuition would support the claim that a dynamically sized trust region would allow an SCP algorithm to take larger steps in regions where the convex approximation is the most accurate. In this section we demonstrate that actually the opposite can happen: dynamic trust regions can cause SCP algorithms to make \textit{slow} progress even when the convex approximation is quite accurate. This is not a universal phenonmenon in the sense that it applies equally to all problem scenarios. Rather, intrinsic properties of the original non-convex constraints~\eqref{eq:nlp_c} and the methods used to convexify them can make one problem more susceptible to this phenomenon than others. We will explore this behavior for each of the performance metrics defined in~\sref{subsec:tr_updates} separately.
 
 \subsection{Relative Error}\label{subsec:creep_rel_err}
 
-We introduce the notion of internal resistance by studying algorithms that use the relative error~\eqref{eq:pmet_rel_error} as the metric with which to update the reference and trust region radius. From Figure~\ref{fig:scp_updates}, the algorithm will reject the current step if $\pmet>\pmet_2$, where $\pmet_2<1$ is a user-defined value. It is enough for the current discussion to assume that $\pmet_2=1$, so that subsequent results are sufficient for any chosen value of $\pmet_2$ during implementation. In order that an iterate be accepted, we must then have
+We introduce the crawling phenomenon by studying algorithms that use the relative error~\eqref{eq:pmet_rel_error} as the metric with which to update the reference and trust region radius. From Figure~\ref{fig:scp_updates}, the algorithm will reject the current step if $\pmet>\pmet_2$, where $\pmet_2<1$ is a user-defined value. It is enough for the current discussion to assume that $\pmet_2=1$, so that subsequent results are sufficient for any chosen value of $\pmet_2$ during implementation. In order that an iterate be accepted, we must then have
 \begin{equation}
 \frac{J(\z^*) - L(\z^*)}{L(\z^*)} < 1 \quad \Rightarrow \quad  J(\z^*) < 2 L(\z^*).
 \label{eq:rel_err_accept}
@@ -193,25 +197,36 @@ P\big( \fni(\z^*),\,\fne(\z^*) \big) < \frac{\phi(\z^*)}{\lambda} + 2 P\big( \fn
 \end{equation}
 What~\eqref{eq:rel_err_accept_2} says is that in order for a step to be accepted, the degree to which the iterate $\z^*$ is infeasible for the original non-convex problem must be bounded by the right hand side. If inequality~\eqref{eq:rel_err_accept_2} is violated, we find ourselves in the top-right case in Figure~\ref{fig:scp_updates}: the iterate $\z^*$ is rejected, the trust region is shrunk by an amount $\alpha$ and the problem is resolved. The inequality~\eqref{eq:rel_err_accept_2} can also be interpreted as saying that the infeasibility of all accepted iterates with respect to the original non-convex problem is bounded from above by the sum of the (weighted) original cost and twice the amount of infeasibility in the convex approximation. 
 
-Loosely speaking, the problem of internal resistance appears when there is sufficient curvature in the set of non-convex functions $h$ that is not captured by the approximations $\fnib(\z,\zb)$ or $\fneb(\z,\zb)$. In this case, satisfaction of the convex constraints~\eqref{eq:virtual_control} implies that $P\big(\fni(\z^*),\,\fne(\z^*)\big)$ can be large, and thus the inequality~\eqref{eq:rel_err_accept_2} is violated. This can happen quite easily when, for example, $\fne(\z)$ has a large Lipschitz constant in the set defined by the trust region, and the affine approximation $\fneb_i(\cdot,\zb)$ cannot sufficient capture the the curvature. We provide a specific example of this in~\sref{subsec:toy_example}.
+Loosely speaking, the crawling phenomenon manifests when there is sufficient curvature in the set of non-convex functions $h$ that is not captured by the approximations $\fnib(\z,\zb)$ or $\fneb(\z,\zb)$. In this case, satisfaction of the convex constraints~\eqref{eq:virtual_control} implies that $P\big(\fni(\z^*),\,\fne(\z^*)\big)$ can be large, and thus the inequality~\eqref{eq:rel_err_accept_2} is violated. This can happen quite easily when, for example, $\fne(\z)$ has a large Lipschitz constant in the set defined by the trust region, and the affine approximation $\fneb_i(\cdot,\zb)$ cannot sufficient capture the the curvature. We provide a specific example of this in~\sref{subsec:toy_example}.
 
 \subsection{Relative Decrement}\label{subsec:crepp_rel_dec}
 
-Algorithms that use the relative decrement as the metric with which to update the reference and trust region size experience the problem internal resistance in a slightly different way. Internal resistance will only arise when the reference is \textit{feasible} (or nearly so) for the original non-convex problem. In this case, we have $P\big(\fni(\z),\,\fne(\z)\big)=0$. To see why, first recall that the denominator in~\eqref{eq:pmet_rel_decrement} is always nonnegative, and that an iterate may be rejected when $\pmet<\pmet_0$ for $\pmet_0>0$. Similar to the relative error case, we shall assume that $\pmet_0=0$ so that the following results are sufficient for any chosen value. If $\pmet_0=0$, then according to the rules in Figure~\ref{fig:scp_updates} an iterate will only accepted if the \textit{numerator} of~\eqref{eq:pmet_rel_decrement} is strictly positive. Hence for an accepted step we have
+Algorithms that use the relative decrement as the metric with which to update the reference and trust region size exhibit the crawling phenomenon only when the reference is \textit{feasible} (or nearly so) for the original non-convex problem. In this case, we have $P\big(\fni(\z),\,\fne(\z)\big)=0$. To see why, first recall that the denominator in~\eqref{eq:pmet_rel_decrement} is always nonnegative, and that an iterate may be rejected when $\pmet<\pmet_0$ for $\pmet_0>0$. Similar to the relative error case, we shall assume that $\pmet_0=0$ so that the following results are sufficient for any chosen value. If $\pmet_0=0$, then according to the rules in Figure~\ref{fig:scp_updates} an iterate will only accepted if the \textit{numerator} of~\eqref{eq:pmet_rel_decrement} is strictly positive. Hence for an accepted step we have
 \begin{subequations}\label{eq:rel_dec_bound}
 \begin{gather}
-J(\zb) - J(\z^*) > 0 \label{eq:rel_dec_bound_a}\\
-\ocost(\zb) - \ocost(\z^*) - \lambda P\big( \fni(\z^*),\,\fne(\z^*) \big) > 0 \label{eq:rel_dec_bound_b}\\
- \frac{\ocost(\zb) - \ocost(\z^*)}{\lambda}  > P\big( \fni(\z^*),\,\fne(\z^*) \big) \label{eq:rel_dec_bound_c}
+0 < J(\zb) - J(\z^*) \label{eq:rel_dec_bound_a}\\
+0 < \ocost(\zb) - \ocost(\z^*) - \lambda P\big( \fni(\z^*),\,\fne(\z^*) \big) \label{eq:rel_dec_bound_b}\\
+ P\big( \fni(\z^*),\,\fne(\z^*) \big) < \frac{\ocost(\zb) - \ocost(\z^*)}{\lambda} \label{eq:rel_dec_bound_c}
 \end{gather}
 \end{subequations}
 which says that the degree to which the iterate $\z^*$ is infeasible for the original non-convex problem is bounded by the (weighted) reduction in original cost. If inequality~\eqref{eq:rel_dec_bound_c} is violated, we find ourselves in the bottom-left case in Figure~\ref{fig:scp_updates}: the iterate will be rejected, the trust region shrunk, and the problem is resolved. 
 
 \begin{remark}
-The inequality~\eqref{eq:rel_dec_bound_b} also illuminates the fact that if the reference $\zb$ is feasible for the original non-convex problem, then an accepted iterate must (strictly) decrease the original cost. This is due to the fact that $\lambda>0$ and $P(\cdot,\cdot)$ is positive definite.
+The inequality~\eqref{eq:rel_dec_bound_c} also illuminates the fact that if the reference $\zb$ is feasible for the original non-convex problem, then an accepted iterate must (strictly) decrease the original cost. This is due to the fact that $\lambda>0$ and $P(\cdot,\cdot)$ is positive definite.
+\end{remark}
+%
+\begin{remark}
+Even in the reference $\zb$ is not feasible, inequality~\eqref{eq:rel_dec_bound_a} leads to an upper bound on the infeasibility in the accepted solution measured via $P\big(\fni(\z^*),\fne(\z^*)\big)$. This bound is the sum of the decrease in original cost (weighted by $1/\lambda$) and the amount by which $\zb$ is infeasible. This guards against the solution deviating too far from feasibility once it is obtained, but does not guarantee recursive feasibility. 
 \end{remark}
 
-Since $\zb$ is feasible for the original problem, we know that actually $\zb$ is a feasible point for Problem~\eqref{eq:cvx_tr} as well (the convex approximation with no virtual control). Thus the optimal solution of Problem~\eqref{eq:cvx_apprx} will not use any virtual control provided that $\lambda$ is large enough\footnote{There exists a non-empty feasible set that uses no virtual control, solutions that are not in this set necessarily increase the cost for large values of $\lambda$.}. The solution $\z^*$ will therefore satisfy $\fnib(\z^*,\zb)\leq 0$ and $\fneb(\z^*,\zb)=0$. If either $\fnib(\cdot,\zb)$ (resp.~$\fneb(\cdot,\zb)$) does not adequately capture the behavior of $\fni(\cdot)$ (resp.~$\fne(\cdot)$), then inequality~\eqref{eq:rel_dec_bound_c} is likely to be violated. This implies that for a given set of non-convex functions $\fni(\cdot)$ and $\fne(\cdot)$, for every feasible $\zb$ there is a \textit{maximum trust region size} that is implicitly defined by the method used to ``convexify'' the original problem and the largest achievable reduction in cost (weighted by $1/\lambda$). For $\lambda\gg1$ the maximum trust region size such that~\eqref{eq:rel_dec_bound_c} is satisfied can be small, causing the algorithm to take small incremental steps that are each nearly feasible for the original non-convex problem. This is depicted in Figure~\todo{add fig} and is the essence of what we refer to as internal resistance.
+Since $\zb$ is feasible for the original problem, we know that actually $\zb$ is a feasible point for Problem~\eqref{eq:cvx_tr} as well (the convex approximation with no virtual control). Thus the optimal solution of Problem~\eqref{eq:cvx_apprx} will not use any virtual control provided that $\lambda$ is large enough\footnote{There exists a non-empty feasible set that uses no virtual control, solutions that are not in this set necessarily increase the cost for large values of $\lambda$.}. The solution $\z^*$ will therefore satisfy $\fnib(\z^*,\zb)\leq 0$ and $\fneb(\z^*,\zb)=0$. If either $\fnib(\cdot,\zb)$ (resp.~$\fneb(\cdot,\zb)$) does not adequately capture the behavior of $\fni(\cdot)$ (resp.~$\fne(\cdot)$), then inequality~\eqref{eq:rel_dec_bound_c} is likely to be violated. This implies that for a given set of non-convex functions $\fni(\cdot)$ and $\fne(\cdot)$, for every feasible $\zb$ there is a \textit{maximum trust region size} that is implicitly defined by the method used to ``convexify'' the original problem and the largest achievable reduction in cost (weighted by $1/\lambda$). For $\lambda\gg1$ the maximum trust region size such that~\eqref{eq:rel_dec_bound_c} is satisfied can be small, causing the algorithm to take small incremental steps that are each nearly feasible for the original non-convex problem. This is depicted in Figure~\ref{fig:effective_tr} and is effectively the root cause of what we refer to as the crawling phenomenon.
+
+\begin{figure}
+\centering
+\input{figs/tikz_scvx_effective_tr.tex}
+\caption{A depiction of the effective trust region size that causes the crawling phenomenon. The cyan square solution is rejected since it is too far from the curve $\fne(\z)=0$ and the inequality~\eqref{eq:rel_err_accept_2} or~\eqref{eq:rel_dec_bound_c} is violated. The trust region is subsequently shrunk until the green radius is obtained.}
+\label{fig:effective_tr}
+\end{figure}
 
 \subsection{A Simple Example}\label{subsec:toy_example}
 
@@ -222,7 +237,7 @@ This section provides a simple example that exhibits the crawling phenomenon. Co
 \text{s.t.} &\quad \fc_1(\z) = -z_2 - \tfrac{4}{3} z_1 - \tfrac{2}{3} \leq 0 \label{eq:toy_prob_b}\\
 &\quad \fc_2(\z) = \z - 2 \leq 0 \label{eq:toy_prob_c}\\
 &\quad \fc_3(\z) = -\z - 2 \leq 0 \label{eq:toy_prob_d}\\
-&\quad \fne_1(\z) = z_2 - z_1^4 + 2z_1^3 - 1.2z_1^2 - 2z_1 = 0 \label{eq:toy_prob_e}
+&\quad \fne(\z) = z_2 - z_1^4 + 2z_1^3 - 1.2z_1^2 - 2z_1 = 0 \label{eq:toy_prob_e}
 \end{align}
 \end{subequations}
 This problem is non-convex due to the quartic constraint~\eqref{eq:toy_prob_e}. Following the procedure outlined in~\sref{sec:scp}, we can convexify Problem~\eqref{eq:toy_prob} for use in an SCP algorithm by introducing the reference $\zb\in\real^2$ and solution variable $\vc\in\real$:
@@ -230,7 +245,7 @@ This problem is non-convex due to the quartic constraint~\eqref{eq:toy_prob_e}. 
 \begin{align}
 \min_{\z,\vc} &\quad z_1+z_2 + \lambda P(\vc) \\
 \text{s.t.} &\quad \fc_1(\z) \leq 0,~\fc_2(\z)\leq0,~\fc_3(\z)\leq0 \\
-&\quad \fne(\zb) + \jacobev{\fne_1}{z}{\zb}\tran\left( \z - \zb \right) + \vc = 0 \\
+&\quad \fne(\zb) + \jacobev{\fne}{z}{\zb}\tran\left( \z - \zb \right) + \vc = 0 \\
 &\quad \twonorm{\z - \zb} \leq \eta
 \end{align}
 \end{subequations}
@@ -238,22 +253,22 @@ The data used for this particular example are an initial trust region of $\eta=0
 
 \begin{figure*}
 \centering
-\subfloat[Relative decrement solution.\label{fig:toy_prob_soln_a}]{\includegraphics[width=0.33\textwidth]{figs/acc_toy_problem}} 
-\subfloat[Relative error solution.\label{fig:toy_prob_soln_b}]{\includegraphics[width=0.33\textwidth]{figs/acc_toy_problem_relerr}} 
-\subfloat[The performance metric $\pmet$. Color regions correspond to Figure~\ref{fig:scp_updates}.\label{fig:toy_prob_soln_c}]{\includegraphics[width=0.33\textwidth]{figs/acc_toy_problem_rho}}
-\caption{Solutions to Problem~\eqref{eq:toy_prob_cvx} across 100 iterations showing the crawling phenomenon.}
+\subfloat[Relative decrement solution, $180$ iterations.\label{fig:toy_prob_soln_a}]{\includegraphics[width=0.33\textwidth]{figs/acc_toy_problem_cvrg}} 
+\subfloat[Relative error solution, $210$ iterations.\label{fig:toy_prob_soln_b}]{\includegraphics[width=0.33\textwidth]{figs/acc_toy_problem_relerr_cvrg}} 
+\subfloat[The performance metric $\pmet$ saturated to the $\left\lbrack0,1\right\rbrack$ interval solely for plotting. Color regions correspond to Figure~\ref{fig:scp_updates}.\label{fig:toy_prob_soln_c}]{\includegraphics[width=0.33\textwidth]{figs/acc_toy_problem_rho_cvrg}}
+\caption{Solutions to Problem~\eqref{eq:toy_prob_cvx} showing the crawling phenomenon.}
 \label{fig:toy_prob_soln}
 \end{figure*}
 
 % \subsubsection{Discussion}
 
-It is important to recognize the nuances of this toy example correctly and resist the temptation to draw overly general conclusions from it. For other choices of initial condition, the crawling phenomenon is avoided. For example, convergence to the local minimum from an initial reference in the shaded gray region is quite rapid, often terminting in ten or fewer iterations. There are, however, relatively large regions in the upper-middle and upper-right of the area plotted in Figure~\ref{fig:toy_prob_soln} from which the phenomenon is observed. We are merely pointing out that the crawling phenomenon \textit{can} happen, not that it \textit{will}. 
+It is important to recognize the nuances of this toy example correctly and resist the temptation to draw overly general conclusions from it. For other choices of initial condition, the crawling phenomenon is avoided. For example, convergence to the local minimum from an initial reference in the shaded gray region is quite rapid, often terminting in ten or fewer iterations. There are, however, relatively large regions in the upper-middle and upper-right of the area plotted in Figure~\ref{fig:toy_prob_soln} from which the phenomenon is observed. We are merely pointing out that the crawling phenomenon \textit{can} happen, not that it \textit{will}. Moreover, if the equality constraint is more linear in the region of interest, then the crawling phenomenon is not as apparent.
 
-Moreover, it is obvious for this toy example that (i) the crawling phenomenon is occuring and (ii) that it occurs away from either minimum. This is only obvious because we know exactly where each minimum is (i.e., we can plot the cost lines and constraints). The trouble, in general, is that this is not possible. Higher dimensional non-convex problems for which no analytical solution is known do not permit the same observations that are obvious for this toy problem. The crawling phenomenon is effectively unobservable in the more challenging problems for which SCP methods are typically implemented on. Does slow progress mean that we have reached a local minimum? No. Arriving at a local minimum indeed implies that adjacent iterates will be close together (in the sense that $\|\z^*-\zb\|$ is small), but the converse is not necessarily true. 
+It is obvious for this toy example that (i) the crawling phenomenon is occuring and (ii) that it occurs away from either minimum. This is only obvious because we know exactly where each minimum is (i.e., we can plot the cost lines and constraints). The trouble, in general, is that this is not possible. Higher dimensional non-convex problems for which no analytical solution is known do not permit the same observations that are obvious for this toy problem. The crawling phenomenon is effectively unobservable in the more challenging problems for which SCP methods are ideally suited. Arriving at a local minimum indeed implies that adjacent iterates will be close together (in the sense that $\|\z^*-\zb\|$ is small), but what we have shown is that the converse is not necessarily true. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{POSSIBLE REMEDIES: HYBRID ALGORITHMS}
+\section{POSSIBLE REMEDIES}\label{sec:remedies}
 
 This section will discuss possible remedies to the crawling phenomenon that has been hitherto described. What can be discerned from Figure~\ref{fig:toy_prob_soln} is that SCP methods are typically quite good at quickly reaching feasibility. The cost of using virtual control dominates the original problems cost. Another advantage is the fact that rapid progress can be made towards an optimum in regions where the equality constraints are well-approximated by affine functions.
 
@@ -262,7 +277,7 @@ This section will discuss possible remedies to the crawling phenomenon that has 
 % \item soft trust region methods?
 % \end{itemize}
 
-\section{CONCLUSIONS}
+\section{CONCLUSIONS}\label{sec:conclusion}
 
 
 % \addtolength{\textheight}{-12cm}   % This command serves to balance the column lengths

@@ -1,0 +1,43 @@
+% !TEX ROOT = ../root.tex
+
+\begin{tikzpicture}[scale=1]
+\tikzmath{
+	\hx=3; \hy=3; \hyy=-1;
+	\slp=0.5; \b=0.5;
+	\cx=1; \cy=\b+\slp*\cx*\cx;
+	\trrad=0.9; \grrad=0.4*\trrad;
+	\xj=0.36;
+	\yj=\b+2*\slp*\cx*\xj-\slp*\cx*\cx;
+	\xjj=\cx-0.05; \yjj=2*\cx*\xjj-\cx*\cx;
+	\xjjj=\cx+0.05; \yjjj=2*\cx*\xjjj-\cx*\cx;
+}
+
+% draw axes
+\draw[thick,->] (0,\hyy) -- (0,\hy) node[anchor=east] {$z_2$};
+\draw[thick,<->] (-\hx,0) -- (\hx,0) node[anchor=north,pos=0.97] {$z_1$};
+\foreach \x in {-1,-0.75,...,2.75} \draw[dashed,gray,opacity=0.4] (-\hx,\x) -- (\hx,\x); 
+\node[anchor=south west,gray] at (-\hx-0.1,2.4) {\footnotesize cost lines};
+
+% blue curve
+\draw[thick,domain=-1:2.25,smooth,variable=\x,blue] plot ({\x},{\b+\slp*\x*\x});
+\node[blue,align=left,anchor=south east,name=fz] at (-1,0.9) {$\fne(\z) = 0$};
+
+% red curve
+\draw[thick,domain=-0.5:2.25,smooth,variable=\x,red] plot ({\x},{\b+2*\slp*\cx*\x-\slp*\cx*\cx});
+\node[red,align=center,anchor=south east,name=fz_lin] at (-0.5,-1) {$\fneb(\z,\zb) = 0$};
+
+% trust region
+\draw[densely dotted,thick,red,fill=red,fill opacity=0.2,text opacity=1] (\cx,\cy) circle (\trrad) node[anchor=south,yshift=0.9cm,xshift=-0.73cm,text width=3cm,align=center] {\footnotesize current trust region};
+\filldraw[black] (\cx,\cy) circle (2pt) node[anchor=south east,yshift=-0.1cm] {$\bar{z}$};
+
+% cyan dot and cost decrease
+% \filldraw[cyan] (\xj,\yj) square (2pt);
+\node[rectangle,fill=cyan,shift={(\xj,\yj)},scale=0.75] {};% square (2pt);
+% \draw[thick,|-|] (\hx-0.8,\cy) -- (\hx-0.8,\yj) node[anchor=west,pos=0.5,text width=2.5cm] {\footnotesize max cost decrease};
+
+% green circle + text
+\draw[densely dotted,thick,darkgreen,fill=darkgreen,fill opacity=0.2,text opacity=1] (\cx,\cy) circle (\grrad) node[anchor=south,name=gcirc,yshift=-{\grrad}cm] {};
+\node[darkgreen,text width=2.5cm,align=center,anchor=north,name=gtext] at (\cx+0.25,-0.35) {\footnotesize max trust region due to~\eqref{eq:rel_err_accept_2} or~\eqref{eq:rel_dec_bound_c}};
+\draw[darkgreen,->] (gtext.north) to[out=90,in=-90] (gcirc.south);
+
+\end{tikzpicture}
