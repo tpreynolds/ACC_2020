@@ -1,5 +1,16 @@
 function [S] = ptr_function(S,C)
 
+% check initial feasibility
+f_eq_x = C.f_eq(S.x);
+f_iq_x = C.f_iq(S.x);
+defect = penalty(f_eq_x) + max(f_iq_x,0);
+if (defect < S.feas_tol)
+    S.feas(1) = true;
+else
+    S.feas(1) = false;
+end
+S.cost(1) = C.c'*S.x;
+
 if (S.plot)
     % initialize figure
     X1 = -3:0.01:2;
@@ -88,10 +99,11 @@ for iter = 1:S.iter_max
     % check feasibility
     defect = penalty(f_x) + max(f_iq_x,0);
     if (defect < S.feas_tol)
-        S.feas = true;
+        S.feas(iter+1) = true;
     else
-        S.feas = false;
+        S.feas(iter+1) = false;
     end
+    S.cost(iter+1) = C.c'*x;
            
     % update the penalty weight(s) if called for
     if (~isempty(strfind(S.type,'tpr')))
@@ -111,7 +123,7 @@ for iter = 1:S.iter_max
     end
    
     % check convergence
-    if ( (abs(S.dJ(iter)) < S.tol)&&(S.feas) )
+    if ( (abs(S.dJ(iter)) < S.tol)&&(S.feas(iter)) )
         if (~S.quiet)
             fprintf('Converged!\n')
         end

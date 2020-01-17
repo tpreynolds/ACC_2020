@@ -1,4 +1,4 @@
-function [S] = scvx_function(S,C)
+function [S] = relerr_function(S,C)
 
 % check initial feasibility
 f_iq_x = C.f_iq(S.x);
@@ -75,7 +75,7 @@ for iter = 1:S.iter_max
     cvx_begin quiet
         cvx_solver('ecos')
         variable x(2,1)
-        variable s(2,1)
+        variable s(1,1)
         dual variable dual_mu;
     
         minimize( C.c'*(S.Px*x+S.qx) + S.w*penalty(s) )
@@ -84,7 +84,7 @@ for iter = 1:S.iter_max
     
         dual_mu : f_k + dfdx_k'*((S.Px*x+S.qx)-S.x) + s(1) == 0;
         if (S.ineq)
-            C.b_iq - dot(C.d_iq,(S.Px*x+S.qx)) - s(2) <= 0;
+            C.b_iq - dot(C.d_iq,(S.Px*x+S.qx)) <= 0;
         end
         
         S.x_min <= (S.Px*x+S.qx) <= S.x_max;
@@ -118,20 +118,26 @@ for iter = 1:S.iter_max
     % compute ratio
     [f_x,~] = f_vals(x,C.f_eq,C.c_eq);
     if (S.ineq)
-        S.dJ(iter) = S.J - (C.c'*x + S.w*(penalty(f_x)+max(C.b_iq-dot(C.d_iq,x),0)));
+        temp = penalty(f_x)+max(C.b_iq-dot(C.d_iq,x),0);
+        if (temp<1e-5)
+            dJ_temp = 0.0;
+        else
+            dJ_temp = temp;
+        end
+        S.dJ(iter) = abs(1+C.c'*x + S.w*(dJ_temp) - cvx_optval-1);
     else
-        S.dJ(iter) = S.J - (C.c'*x + S.w*(penalty(f_x)));
+        S.dJ(iter) = abs(1+C.c'*x + S.w*(penalty(f_x)) - cvx_optval-1);
     end
-    S.dL(iter) = saturate(S.J - cvx_optval,1e-8,inf);
+    S.dL(iter) = saturate(abs(1+cvx_optval),1e-8,inf);
     rho = S.dJ(iter)/S.dL(iter);
     
     % update the linearized & non-linear costs
 %     L_k = cvx_optval;
     
-    S.J = C.c'*x + S.w*penalty(f_x);
+%     S.J = C.c'*x + S.w*penalty(f_x);
     
     % update trust region
-    if (rho<S.rho0)
+    if (rho>S.rho2)
         S.r(iter+1) = S.r(iter) / S.alpha;
         S.reject(iter+1) = true;
         verdict = 'rejected';
@@ -139,11 +145,11 @@ for iter = 1:S.iter_max
     else
         verdict = 'accepted';
         S.reject(iter+1) = false;
-        if (rho<S.rho1)
+        if (rho>=S.rho1 && rho<=S.rho2)
             S.x = x;
             S.r(iter+1) = S.r(iter) / S.alpha;
             tr = 'shrink';
-        elseif (rho>=S.rho1 && rho<S.rho2)
+        elseif (rho>=S.rho0 && rho<S.rho1)
             S.x = x;
             S.r(iter+1) = S.r(iter);
             tr = 'keep';
@@ -153,6 +159,7 @@ for iter = 1:S.iter_max
             tr = 'grow';
         end
     end
+    %
     if (S.r(iter+1)<S.r_l) 
         S.r(iter+1) = S.r_l;
         tr = 'limitedL';
@@ -185,7 +192,7 @@ for iter = 1:S.iter_max
     S.cost(iter+1) = C.c'*x;
         
     % check convergence
-    if ( (abs(S.dJ(iter)) < S.tol) && (S.feas(iter+1)) )
+    if ( (norm(x-[0.52878234; -1.01920895]) < S.tol) && (S.feas(iter+1)) )
         if (~S.quiet)
             fprintf('Converged!\n')
         end

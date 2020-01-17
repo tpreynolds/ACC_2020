@@ -6,9 +6,9 @@ set(0,'defaulttextinterpreter','latex')
 S = struct;
 C = struct;
 % SCvx parameters
-S.rho0 = 0.0;
-S.rho1 = 0.1; 
-S.rho2 = 0.9; 
+S.rho0 = 0.1;
+S.rho1 = 0.9; 
+S.rho2 = 1.0; 
 S.alpha = 1.5; % shrink rate
 S.beta = 2.0; % growth rate
 S.r_l = 0.005; % minimum trust region size
@@ -17,8 +17,8 @@ S.type = '2';
 S.ineq = true;
 S.plot = true;
 S.quiet = false;
-S.iter_max  = 500;
-S.tol       = 1e-5; % tolerance for dJ_k (convergence)
+S.iter_max  = 120;
+S.tol       = 1e-3; % tolerance for dJ_k (convergence)
 S.feas_tol  = 1e-3;
 
 S.X_all = zeros(2,S.iter_max);
@@ -44,10 +44,10 @@ C.f_eq    = @(x)(C.c_eq(1)*x.^4 ...
 S.x = [1.5;1.5]; % [0.5,1.5]
 S.J = C.c'*S.x + S.w*penalty(S.x);
 S.r = NaN(S.iter_max,1);
-S.rho = NaN(S.iter_max,1);
 S.dJ = NaN(S.iter_max,1);
 S.dL = NaN(S.iter_max,1);
 S.dx = NaN(S.iter_max,1);
+S.rho = NaN(S.iter_max,1);
 S.reject = NaN(S.iter_max,1);
 % initial trust region size
 S.r(1) = 0.1;
@@ -58,13 +58,13 @@ S.x_min = [-2;-2];
 S.x_max = [2;2];
 
 %% solve
-S = scvx_function(S,C);
-
+S = relerr_function(S,C);
+S.cvrg_iter = 65;
 %% plot
 set(0,'defaultAxesTickLabelInterpreter','latex','defaultLegendInterpreter','latex')
 xs_1 = [-0.7372; 0.3163];
 xs_2 = [0.5288; -1.0192];
-
+    
 % final plot
 ic_col = [0,0.6,1];%./255;
 fc_col = [1,0,1];%./255;
@@ -91,7 +91,7 @@ end
 h3=contour(X1,X2,C.f_cost(X,Y),-4:0.2:4,'k:');
 h4=plot(xs_1(1),xs_1(2),'b*','MarkerSize',10);
 h5=plot(xs_2(1),xs_2(2),'r*','MarkerSize',10);
-set(gca,'FontSize',14)
+set(gca,'FontSize',12)
 legend('equality constraint','inequality constraint','cost lines',...
     'local min','global min','Location','northwest','FontSize',12)
 colormap(N_col')
@@ -99,7 +99,7 @@ hC = colorbar('TickLabelInterpreter','latex','FontSize',14);
 hC.Label.String = 'Iteration';
 hC.Label.Interpreter = 'latex';
 hC.Label.FontSize = 14;
-caxis([0 min(S.cvrg_iter,S.iter_max)]);
+caxis([0 min(S.iter_max,S.cvrg_iter)]);
 set(gca,'Xlim',[-2,2],'Ylim',[-2,2]);
 xlabel('$z_1$','FontSize',16)
 ylabel('$z_2$','FontSize',16)
@@ -119,28 +119,28 @@ ylabel('$z_2$','FontSize',16)
 % ylabel('$c^{\top}z$','FontSize',18)
 % xlabel('Iteration Number','FontSize',16)
 
+
 gcol = 0.1*[0,1,0]+0.9*[1,1,1];
 ycol = 0.1*[1,1,0]+0.9*[1,1,1];
 rcol = 0.1*[1,0,0]+0.9*[1,1,1];
 
-figure(9), clf
-subplot(2,1,1), hold on, grid on, box on
-F = fill([0 S.iter_max S.iter_max 0],[S.rho1 S.rho1 2 2],...
-        gcol,'LineStyle','none','FaceAlpha',0.8);
-fill([0 S.iter_max S.iter_max 0],[S.rho0 S.rho0 S.rho1 S.rho1],...
+figure(9)%, clf
+subplot(2,1,2), cla, hold on, grid on, box on
+F = fill([0 S.iter_max S.iter_max 0],[S.rho2 S.rho2 2 2],...
+        rcol,'LineStyle','none','FaceAlpha',0.8);
+fill([0 S.iter_max S.iter_max 0],[S.rho1 S.rho1 S.rho2 S.rho2],...
         ycol,'LineStyle','none','FaceAlpha',0.8); 
-fill([0 S.iter_max S.iter_max 0],[-1 -1 S.rho0 S.rho0],...
-        rcol,'LineStyle','none','FaceAlpha',0.8); 
+fill([0 S.iter_max S.iter_max 0],[-1 -1 S.rho1 S.rho1],...
+        gcol,'LineStyle','none','FaceAlpha',0.8); 
 plot(1:S.iter_max,S.rho,'k-o','MarkerSize',4,'MarkerFaceColor','k','LineWidth',1);
 plot([1 S.iter_max],[S.rho0 S.rho0],'r--','LineWidth',1)
 plot([1 S.iter_max],[S.rho1 S.rho1],'r--','LineWidth',1)
 plot([1 S.iter_max],[S.rho2 S.rho2],'r--','LineWidth',1)
-set(gca,'FontSize',14)
-set(gca,'Ylim',[-0.25 1.25])
+set(gca,'Ylim',[-0.25 1.25],'FontSize',14)
 set(gca,'Xlim',[0 min(S.iter_max,S.cvrg_iter)])
 xlabel('Iteration','FontSize',14)
 ylabel('$\rho$','FontSize',16)
-title('Relative Decrement','FontSize',15)
+title('Relative Error','FontSize',15)
 
 % Iterates + TR
 % figure(9)
